@@ -1,4 +1,4 @@
-# DjariaBlog - Medium Clone
+# Medium - Publishing Platform
 
 A full-featured publishing platform built with Next.js 15, TypeScript, and Prisma.
 
