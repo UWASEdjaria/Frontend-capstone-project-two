@@ -92,3 +92,10 @@ model LikeLab8 {
   postId Int
   userId Int
 }
+
+// Simple Follow model for Lab9
+model FollowLab9 {
+  id          Int @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+}
