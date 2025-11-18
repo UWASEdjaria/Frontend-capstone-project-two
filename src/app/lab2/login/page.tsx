@@ -18,18 +18,19 @@ export default function Login() {
     });
 
     if (res?.ok) router.push("/lab2/profile");
+    
   };
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow border border-red-200">
-      <h1 className="text-2xl font-bold mb-4 text-red-500">Login</h1>
+      <h1 className="text-2xl font-bold mb-4 text-orange-500">Login</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
+          className="p-2 text-gray-600 border border-gray-300 rounded"
           required
         />
         <input
@@ -37,12 +38,12 @@ export default function Login() {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
+          className="p-2 text-gray-600 border border-gray-300 rounded"
           required
         />
         <button
           type="submit"
-          className="bg-red-500 hover:bg-pink-500 text-white p-2 rounded transition-colors"
+          className="bg-orange-500 hover:bg-pink-500 text-white p-2 rounded transition-colors"
         >
           Login
         </button>
