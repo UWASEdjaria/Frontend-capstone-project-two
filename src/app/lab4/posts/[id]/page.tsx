@@ -15,12 +15,16 @@ export default function PostPage() {
     // Fetch post data
     fetch(`/api/lab4/post/${id}`)
       .then(r => r.json())
-      .then(setPost);
+      .then(data => {
+        setPost(data);
+        setLikes(data.likes?.length || 0);
+      });
     
     // Fetch comments
     fetch(`/api/lab7/comments/${id}`)
       .then(r => r.json())
-      .then(setComments);
+      .then(setComments)
+      .catch(() => setComments([]));
   }, [id]);
 
   const handleLike = async () => {
@@ -31,8 +35,9 @@ export default function PostPage() {
     });
     
     if (res.ok) {
-      setLiked(!liked);
-      setLikes(liked ? likes - 1 : likes + 1);
+      const data = await res.json();
+      setLiked(data.liked);
+      setLikes(data.liked ? likes + 1 : likes - 1);
     }
   };
 
@@ -78,21 +83,21 @@ export default function PostPage() {
       <div className="flex gap-4 mb-8 pb-4 border-b">
         <button
           onClick={handleLike}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
-            liked ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+          className={`flex items-center gap-2 px-4 py-2 rounded border-2 ${
+            liked ? 'border-black bg-black text-white' : 'border-black bg-transparent text-black hover:bg-black hover:text-white'
           }`}
         >
-          ❤️ {likes || post.likes?.length || 0}
+          ❤️ {likes}
         </button>
         
         <button
           onClick={handleShare}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 rounded"
+          className="flex items-center gap-2 px-4 py-2 rounded border-2 border-black bg-transparent text-black hover:bg-black hover:text-white"
         >
           🔗 Share
         </button>
         
-        <span className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded">
+        <span className="flex items-center gap-2 px-4 py-2 rounded border-2 border-black bg-transparent text-black">
           💬 {comments.length} Comments
         </span>
       </div>
@@ -105,13 +110,13 @@ export default function PostPage() {
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Write a comment..."
-            className="w-full p-3 border rounded mb-2"
+            className="w-full p-3 border-2 border-black rounded mb-2 text-black transition-all duration-300 focus:shadow-md focus:scale-105"
             rows={3}
             required
           />
           <button
             type="submit"
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+            className="border-2 border-black bg-transparent text-black px-4 py-2 rounded hover:bg-black hover:text-white"
           >
             Post Comment
           </button>

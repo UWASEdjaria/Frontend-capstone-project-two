@@ -16,8 +16,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1 flex flex-col min-h-screen bg-white">{children}</main>
         </Providers>
 
-        <footer className="bg-white text-center py-4 border-t border-gray-200 text-slate-600 font-sans">
-          &copy; {new Date().getFullYear()} Medium Write. All rights reserved.
+        <footer className="bg-white text-center py-4 border-t border-gray-200 text-black font-sans">
+          &copy; {new Date().getFullYear()} Medium. All rights reserved.
         </footer>
       </body>
     </html>

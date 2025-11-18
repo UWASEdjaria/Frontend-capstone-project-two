@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 
-export async function GET(req: Request, { params }: any) {
-  const count = await prisma.likeLab8.count({
-    where: { postId: Number(params.id) },
+const prisma = new PrismaClient();
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const likes = await prisma.like.findMany({
+    where: { postId: parseInt(params.id) },
+    include: {
+      user: true,
+    },
   });
-
-  return NextResponse.json({ likes: count });
+  
+  return NextResponse.json({ 
+    count: likes.length,
+    likes: likes 
+  });
 }
