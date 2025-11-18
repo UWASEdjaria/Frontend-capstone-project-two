@@ -1,10 +1,8 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import { posts } from "./posts";  // Updated import path
 
 export default function Feed() {
-  const [posts, setPosts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
 
@@ -29,7 +27,12 @@ export default function Feed() {
     }
   };
 
-  useEffect(() => { fetchPosts() }, []);
+  const filtered = posts.filter(post => 
+    (!search || 
+     post.title.toLowerCase().includes(search.toLowerCase()) || 
+     post.content.toLowerCase().includes(search.toLowerCase())) &&
+    (!selectedTag || post.tags.includes(selectedTag))
+  );
 
   return (
     <div className="max-w-5xl mx-auto mt-10">
@@ -51,9 +54,9 @@ export default function Feed() {
             {p.tags?.length > 0 && (
               <p className="text-sm text-gray-500">Tags: {p.tags.map((t: any) => t.name).join(", ")}</p>
             )}
-          </Link>
+          </div>
         ))}
       </div>
-    </div>
-  );
+    </div>
+  );
 }
