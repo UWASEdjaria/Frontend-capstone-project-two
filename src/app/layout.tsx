@@ -10,14 +10,14 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-white text-gray-900">
+      <body className="bg-white text-gray-900 font-sans">
         <Providers>
           <Header />
           <main className="flex-1 flex flex-col min-h-screen bg-white">{children}</main>
         </Providers>
 
-        <footer className="bg-white text-center py-4  border-t border-gray-200 text-red-500">
-          &copy; {new Date().getFullYear()} DjariaBlog. All rights reserved.
+        <footer className="bg-white text-center py-4 border-t border-gray-200 text-slate-600 font-sans">
+          &copy; {new Date().getFullYear()} Medium Write. All rights reserved.
         </footer>
       </body>
     </html>

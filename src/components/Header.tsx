@@ -7,10 +7,10 @@ export default function Header() {
   const { data: session } = useSession();
 
   return (
-    <header className="bg-white shadow-md border-b">
+    <header className="bg-white shadow-md border-b font-sans">
       <nav className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="text-2xl font-bold text-slate-800">
-          DjariaBlog
+        <Link href="/" className="text-2xl font-bold text-slate-800 font-sans">
+          Medium Write
         </Link>
         
         <div className="flex items-center gap-6">
