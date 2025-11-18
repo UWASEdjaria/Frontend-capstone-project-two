@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DjariaBlog - Medium Clone
 
-## Getting Started
+A full-featured publishing platform built with Next.js 15, TypeScript, and Prisma.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Authentication** - NextAuth with custom JWT
+- **Rich Text Editor** - Jodit editor with formatting, images, embeds
+- **Posts Management** - Create, read, update, delete posts
+- **Social Features** - Comments, likes, sharing
+- **Responsive Design** - Mobile-first approach
+- **SEO Optimized** - Meta tags and Open Graph
+
+## 📁 Project Structure
+
+```
+frontend-capstone-project-two/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/               # API Routes
+│   │   │   ├── auth/          # NextAuth configuration
+│   │   │   ├── lab3/          # Rich text editor APIs
+│   │   │   ├── lab4/          # Posts CRUD APIs
+│   │   │   ├── lab6/          # Comments APIs
+│   │   │   ├── lab7/          # Likes APIs
+│   │   │   └── lab8/          # Social features APIs
+│   │   ├── lab1/              # Project setup
+│   │   ├── lab2/              # Authentication pages
+│   │   ├── lab3/              # Rich text editor
+│   │   ├── lab4/              # Posts management
+│   │   ├── lab5/              # Feeds and search
+│   │   ├── lab6/              # Comments system
+│   │   ├── lab7/              # Reactions (likes)
+│   │   ├── lab8/              # Social features
+│   │   ├── lab9/              # SEO and performance
+│   │   ├── context/           # React Context providers
+│   │   ├── globals.css        # Global styles
+│   │   ├── layout.tsx         # Root layout
+│   │   ├── page.tsx           # Home page
+│   │   └── providers.tsx      # Client-side providers
+│   ├── components/            # Reusable components
+│   │   └── Header.tsx         # Navigation header
+│   └── generated/             # Prisma generated files
+├── prisma/                    # Database schema and migrations
+├── lib/                       # Utility functions
+├── public/                    # Static assets
+├── .env                       # Environment variables
+├── next.config.ts             # Next.js configuration
+├── package.json               # Dependencies
+├── tsconfig.json              # TypeScript configuration
+└── README.md                  # Project documentation
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: NextAuth.js
+- **Styling**: Tailwind CSS
+- **Rich Text**: Jodit Editor
+- **Deployment**: Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📋 Lab Structure
 
-## Learn More
+Each lab represents a specific feature implementation:
 
-To learn more about Next.js, take a look at the following resources:
+- **Lab 1**: Project setup and routing
+- **Lab 2**: Authentication and user profiles
+- **Lab 3**: Rich text editor and content creation
+- **Lab 4**: Posts CRUD and media handling
+- **Lab 5**: Feeds, tags, and search
+- **Lab 6**: Comments system
+- **Lab 7**: Reactions and likes
+- **Lab 8**: Social features and following
+- **Lab 9**: SEO, performance, and SSG/SSR
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/UWASEdjaria/Frontend-capstone-project-two.git
+   cd frontend-capstone-project-two
+   ```
 
-## Deploy on Vercel
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Add your database URL and other required variables
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Set up database**
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+5. **Run development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open in browser**
+   ```
+   http://localhost:3000
+   ```
+
+## 🌐 Deployment
+
+The application is configured for deployment on Vercel:
+
+1. Push to GitHub
+2. Connect repository to Vercel
+3. Set environment variables in Vercel dashboard
+4. Deploy automatically on push to main branch
+
+## 📝 Environment Variables
+
+```env
+DATABASE_URL="your-database-url"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
