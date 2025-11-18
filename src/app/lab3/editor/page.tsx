@@ -26,16 +26,23 @@ export default function Editor() {
   const publishPost = async () => {
     if (!title || !content) return alert("Title and content required!");
     
-    const response = await fetch("/api/lab3/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content })
-    });
-    
-    if (response.ok) {
-      alert("Post published!");
-      setTitle("");
-      setContent("");
+    try {
+      const response = await fetch("/api/lab4/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content })
+      });
+      
+      if (response.ok) {
+        alert("Post published successfully!");
+        setTitle("");
+        setContent("");
+      } else {
+        alert("Failed to publish post");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error publishing post");
     }
   };
 
@@ -47,16 +54,16 @@ export default function Editor() {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-orange-500">Rich Text Editor</h1>
+      <h1 className="text-2xl font-bold mb-4 text-black">Rich Text Editor</h1>
       
       <div className="mb-4 flex gap-2">
-        <button onClick={() => setPreview(!preview)} className="px-4 py-2 bg-orange-500 text-white rounded">
+        <button onClick={() => setPreview(!preview)} className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105">
           {preview ? "Edit" : "Preview"}
         </button>
-        <button onClick={saveDraft} className="px-4 py-2 border border-orange-500 text-orange-500 rounded">
+        <button onClick={saveDraft} className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105">
           Save Draft
         </button>
-        <button onClick={publishPost} className="px-4 py-2 bg-green-500 text-white rounded">
+        <button onClick={publishPost} className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105">
           Publish
         </button>
       </div>
@@ -67,7 +74,7 @@ export default function Editor() {
             placeholder="Title"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full p-2 mb-4 border rounded text-lg"
+            className="w-full p-2 mb-4 border-2 border-black rounded text-lg text-black transition-all duration-300 focus:shadow-md focus:scale-105"
           />
           <JoditEditor
             ref={editor}

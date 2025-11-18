@@ -1,50 +1,70 @@
 "use client";
-import { useState } from "react";
-import { posts } from "./posts";  // Updated import path
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Feed() {
   const [search, setSearch] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
+  const [posts, setPosts] = useState<any[]>([]);
+  const [allPosts, setAllPosts] = useState<any[]>([]);
 
-  const filtered = posts.filter(post => 
-    (!search || 
-     post.title.toLowerCase().includes(search.toLowerCase()) || 
-     post.content.toLowerCase().includes(search.toLowerCase())) &&
-    (!selectedTag || post.tags.includes(selectedTag))
-  );
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch("/api/lab4/post");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setAllPosts(data);
+      setPosts(data);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    if (!search) {
+      setPosts(allPosts);
+    } else {
+      const filtered = allPosts.filter(post => 
+        post.title.toLowerCase().includes(search.toLowerCase()) || 
+        post.content.toLowerCase().includes(search.toLowerCase())
+      );
+      setPosts(filtered);
+    }
+  }, [search, allPosts]);
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-gray-500">Posts</h1>
-      <input
-        placeholder="Search posts..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="w-full p-2 mb-4 border text-gray-500 border-orange-700 rounded"
-      />
-      <div className="space-y-4">
-        {filtered.map(post => (
-          <div key={post.id} className="p-4 border rounded">
-            <h2 className="text-xl font-semibold text-gray-500">{post.title}</h2>
-            <p className="text-gray-600">{post.content}</p>
-            <p className="text-sm text-gray-500">By {post.author}</p>
-            {post.tags.length > 0 && (
-              <div className="flex gap-2 mt-2">
-                {post.tags.map(tag => (
-                  <button 
-                    key={tag} 
-                    onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
-                    className={`px-2 py-1 text-xs border border-orange-500 rounded-lg hover:bg-orange-100 ${
-                      selectedTag === tag ? "bg-orange-500 text-white" : "text-black"
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
+    <div className="max-w-5xl mx-auto mt-10 p-4">
+      <h1 className="text-3xl font-bold text-black mb-4">Home Feed</h1>
+
+      <div className="flex gap-2 mb-6">
+        <input 
+          placeholder="Search posts..." 
+          value={search} 
+          onChange={e => setSearch(e.target.value)}
+          className="p-2 border-2 border-black rounded flex-1 text-black transition-all duration-300 focus:shadow-md focus:scale-105" 
+        />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {posts.length === 0 ? (
+          <p className="text-black">No posts found.</p>
+        ) : (
+          posts.map(p => (
+            <Link key={p.id} href={`/lab4/posts/${p.id}`} className="p-4 border-2 border-black rounded hover:bg-gray-50 bg-white transition-all duration-300 hover:scale-105">
+              <h2 className="text-xl font-bold text-black">{p.title}</h2>
+              <p className="text-black">By {p.author?.name || 'Unknown'}</p>
+              <div className="flex gap-4 mt-2 text-sm text-black">
+                <span>❤️ {p.likes?.length || 0}</span>
+                <span>💬 {p.comments?.length || 0}</span>
               </div>
-            )}
-          </div>
-        ))}
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
