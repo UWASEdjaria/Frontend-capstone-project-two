@@ -1,6 +1,6 @@
-import { AuthProvider } from './context/AuthContext';
 import './globals.css';
 import Link from 'next/link';
+import { Providers } from './providers';
 
 export const metadata = {
   title: 'Djaria Medium Clone',
@@ -26,9 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </nav>
         </header>
-          <AuthProvider>
-        <main className="flex-1  flex flex-col min-h-screen bg-white">{children}</main>
-         </AuthProvider>
+          <Providers>
+            <main className="flex-1  flex flex-col min-h-screen bg-white">{children}</main>
+          </Providers>
 
         <footer className="bg-white text-center py-4  border-t border-gray-200 text-red-500">
           &copy; {new Date().getFullYear()} DjariaBlog. All rights reserved.
