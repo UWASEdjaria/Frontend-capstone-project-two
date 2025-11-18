@@ -23,6 +23,22 @@ export default function Editor() {
     alert("Draft saved!");
   };
 
+  const publishPost = async () => {
+    if (!title || !content) return alert("Title and content required!");
+    
+    const response = await fetch("/api/lab3/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, content })
+    });
+    
+    if (response.ok) {
+      alert("Post published!");
+      setTitle("");
+      setContent("");
+    }
+  };
+
   const loadDraft = (draft: any) => {
     setTitle(draft.title);
     setContent(draft.content);
@@ -39,6 +55,9 @@ export default function Editor() {
         </button>
         <button onClick={saveDraft} className="px-4 py-2 border border-orange-500 text-orange-500 rounded">
           Save Draft
+        </button>
+        <button onClick={publishPost} className="px-4 py-2 bg-green-500 text-white rounded">
+          Publish
         </button>
       </div>
 
