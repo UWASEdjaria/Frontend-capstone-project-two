@@ -8,10 +8,26 @@ export default function Feed() {
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
 
-  const fetchPosts = () => {
-    let url = "/api/lab5/posts";
-    if (search || tag) url += `?${search ? search=${search} : ""}${tag ? &tag=${tag} : ""}`;
-    fetch(url).then(r => r.json()).then(setPosts);
+  const fetchPosts = async () => {
+    try {
+      let url = "/api/lab4/posts";
+      if (search || tag) {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (tag) params.append('tag', tag);
+        url += `?${params.toString()}`;
+      }
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setPosts(data);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      // Optionally set an error state to show to the user
+      // setError("Failed to load posts. Please try again later.");
+    }
   };
 
   useEffect(() => { fetchPosts() }, []);
@@ -30,7 +46,7 @@ export default function Feed() {
 
       <div className="flex flex-col gap-4">
         {posts.map(p => (
-          <Link key={p.id} href={/lab4/posts/${p.id}} className="p-4 border rounded hover:shadow bg-white">
+          <Link key={p.id} href={`/lab4/posts/${p.id}`} className="p-4 border rounded hover:shadow bg-white">
             <h2 className="text-xl font-bold text-[#ff4d6d]">{p.title}</h2>
             <p className="text-gray-700">By {p.author.name}</p>
             {p.tags?.length > 0 && (
