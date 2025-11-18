@@ -1,44 +1,51 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import { posts } from "./posts";  // Updated import path
 
 export default function Feed() {
-  const [posts, setPosts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [tag, setTag] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
 
-  const fetchPosts = () => {
-    let url = "/api/lab5/posts";
-    if (search || tag) url += `?${search ? search=${search} : ""}${tag ? &tag=${tag} : ""}`;
-    fetch(url).then(r => r.json()).then(setPosts);
-  };
-
-  useEffect(() => { fetchPosts() }, []);
+  const filtered = posts.filter(post => 
+    (!search || 
+     post.title.toLowerCase().includes(search.toLowerCase()) || 
+     post.content.toLowerCase().includes(search.toLowerCase())) &&
+    (!selectedTag || post.tags.includes(selectedTag))
+  );
 
   return (
-    <div className="max-w-5xl mx-auto mt-10">
-      <h1 className="text-3xl font-bold text-[#ff4d6d] mb-4">Home Feed</h1>
-
-      <div className="flex gap-2 mb-6">
-        <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
-               className="p-2 border rounded flex-1" />
-        <input placeholder="Tag..." value={tag} onChange={e => setTag(e.target.value)}
-               className="p-2 border rounded flex-1" />
-        <button onClick={fetchPosts} className="bg-[#ff4d6d] text-white px-4 rounded">Go</button>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        {posts.map(p => (
-          <Link key={p.id} href={/lab4/posts/${p.id}} className="p-4 border rounded hover:shadow bg-white">
-            <h2 className="text-xl font-bold text-[#ff4d6d]">{p.title}</h2>
-            <p className="text-gray-700">By {p.author.name}</p>
-            {p.tags?.length > 0 && (
-              <p className="text-sm text-gray-500">Tags: {p.tags.map((t: any) => t.name).join(", ")}</p>
+    <div className="max-w-3xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4 text-gray-500">Posts</h1>
+      <input
+        placeholder="Search posts..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="w-full p-2 mb-4 border text-gray-500 border-orange-700 rounded"
+      />
+      <div className="space-y-4">
+        {filtered.map(post => (
+          <div key={post.id} className="p-4 border rounded">
+            <h2 className="text-xl font-semibold text-gray-500">{post.title}</h2>
+            <p className="text-gray-600">{post.content}</p>
+            <p className="text-sm text-gray-500">By {post.author}</p>
+            {post.tags.length > 0 && (
+              <div className="flex gap-2 mt-2">
+                {post.tags.map(tag => (
+                  <button 
+                    key={tag} 
+                    onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
+                    className={`px-2 py-1 text-xs border border-orange-500 rounded-lg hover:bg-orange-100 ${
+                      selectedTag === tag ? "bg-orange-500 text-white" : "text-black"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             )}
-          </Link>
+          </div>
         ))}
       </div>
-    </div>
-  );
+    </div>
+  );
 }
