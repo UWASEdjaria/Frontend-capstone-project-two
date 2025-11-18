@@ -25,8 +25,7 @@ export default function Feed() {
       setPosts(data);
     } catch (error) {
       console.error("Error fetching posts:", error);
-      // Optionally set an error state to show to the user
-      // setError("Failed to load posts. Please try again later.");
+      
     }
   };
 
