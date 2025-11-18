@@ -1,40 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import bcrypt from "bcryptjs";
 
-export default function Signup() {
-  const [name, setName] = useState("");
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const res = await fetch("/api/lab2/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password: hashedPassword }),
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
     });
 
-    if (res.ok) router.push("/lab2/login");
+    if (res?.ok) router.push("/lab2/profile");
   };
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow border border-red-200">
-      <h1 className="text-2xl font-bold mb-4 text-red-500">Sign Up</h1>
+      <h1 className="text-2xl font-bold mb-4 text-red-500">Login</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="p-2 border border-gray-300 rounded"
-          required
-        />
         <input
           type="email"
           placeholder="Email"
@@ -55,7 +44,7 @@ export default function Signup() {
           type="submit"
           className="bg-red-500 hover:bg-pink-500 text-white p-2 rounded transition-colors"
         >
-          Sign Up
+          Login
         </button>
       </form>
     </div>
