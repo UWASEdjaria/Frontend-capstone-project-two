@@ -77,3 +77,11 @@ model Follow {
   following   User   @relation("followers", fields: [followingId], references: [id])
   followingId String
 }
+
+// Simple Comment model for Lab7
+model CommentLab7 {
+  id        Int      @id @default(autoincrement())
+  text      String
+  postId    Int
+  createdAt DateTime @default(now())
+}
