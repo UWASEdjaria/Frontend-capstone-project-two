@@ -1,12 +1,21 @@
-import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
-export async function POST(req: Request) {
-  const { postId, text } = await req.json();
+const prisma = new PrismaClient();
 
-  const comment = await prisma.commentLab7.create({
-    data: { postId: Number(postId), text },
+export async function POST(request: Request) {
+  const { postId, content } = await request.json();
+  
+  const comment = await prisma.comment.create({
+    data: {
+      content,
+      postId: parseInt(postId),
+      authorId: 1, // Default user
+    },
+    include: {
+      author: true,
+    },
   });
-
+  
   return NextResponse.json(comment);
 }

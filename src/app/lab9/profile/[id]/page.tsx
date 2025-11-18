@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 export default function ProfilePage({ params }: any) {
-  const userId = Number(params.id);  // user you want to follow
-  const currentUser = 1;             // TEMP user (replace with auth)
+  const userId = Number(params.id);
+  const currentUser = 1;             
 
   const [followers, setFollowers] = useState(0);
 
@@ -34,7 +34,7 @@ export default function ProfilePage({ params }: any) {
     <div className="p-4">
       <button
         onClick={toggleFollow}
-        className="bg-orange-500 text-white px-4 py-2 rounded"
+        className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
       >
         Follow ({followers})
       </button>
