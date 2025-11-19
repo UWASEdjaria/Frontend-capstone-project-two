@@ -7,6 +7,8 @@ export default function PostsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
+  const [userLikes, setUserLikes] = useState<{[key: string]: boolean}>({});
+  const [userDislikes, setUserDislikes] = useState<{[key: string]: boolean}>({});
   const currentUser = "1"; // Default user
   
   useEffect(() => {
@@ -23,15 +25,21 @@ export default function PostsPage() {
   }, []);
 
   const toggleLike = async (postId: string) => {
-    await fetch("/api/lab7/likes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, userId: currentUser }),
-    });
-    // Refresh posts
-    const res = await fetch("/api/lab4/post");
-    const data = await res.json();
-    setPosts(data);
+    // Always add like (keep increasing)
+    setPosts(posts.map(p => 
+      p.id === postId 
+        ? { ...p, likes: [...(p.likes || []), { userId: currentUser + Date.now() }] }
+        : p
+    ));
+  };
+
+  const toggleDislike = async (postId: string) => {
+    // Always add dislike (keep increasing)
+    setPosts(posts.map(p => 
+      p.id === postId 
+        ? { ...p, dislikes: [...(p.dislikes || []), { userId: currentUser + Date.now() }] }
+        : p
+    ));
   };
 
   const addComment = async (postId: string) => {
@@ -66,13 +74,19 @@ export default function PostsPage() {
             </Link>
             <p className="text-black mt-2">By {p.author?.name || 'Unknown'}</p>
             
-            {/* Like and Comment Actions */}
+            {/* Like, Dislike and Comment Actions */}
             <div className="flex gap-4 mt-4">
               <button 
                 onClick={() => toggleLike(p.id)}
-                className="flex items-center gap-2 px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all"
+                className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black group"
               >
-                ❤️ {p.likes?.length || 0}
+                <span className="group-hover:text-white text-black">❤️ {p.likes?.length || 0}</span>
+              </button>
+              <button 
+                onClick={() => toggleDislike(p.id)}
+                className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black group"
+              >
+                <span className="group-hover:text-white text-black">👎 {p.dislikes?.length || 0}</span>
               </button>
               <span className="flex items-center gap-2 px-3 py-1">
                 💬 {p.comments?.length || 0}
@@ -87,7 +101,7 @@ export default function PostsPage() {
                   placeholder="Add a comment..."
                   value={newComment[p.id] || ""}
                   onChange={(e) => setNewComment({ ...newComment, [p.id]: e.target.value })}
-                  className="flex-1 p-2 border border-black rounded"
+                  className="flex-1 p-2 border border-black rounded text-black"
                 />
                 <button
                   onClick={() => addComment(p.id)}
@@ -102,8 +116,8 @@ export default function PostsPage() {
             {p.comments && p.comments.length > 0 && (
               <div className="mt-4 space-y-2">
                 {p.comments.map((comment: any) => (
-                  <div key={comment.id} className="p-3 bg-gray-50 border rounded">
-                    <p className="text-sm font-semibold">{comment.author?.name || 'Unknown'}</p>
+                  <div key={comment.id} className="p-3 bg-gray-50 border border-black rounded">
+                    <p className="text-sm font-semibold text-black">{comment.author?.name || 'Unknown'}</p>
                     <p className="text-black">{comment.content}</p>
                   </div>
                 ))}
