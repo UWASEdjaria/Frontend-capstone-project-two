@@ -15,15 +15,25 @@ export default function PostsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
+  const [followedUsers, setFollowedUsers] = useState<{[key: string]: boolean}>({});
+  const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
+  const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
+  const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
   const currentUser = session?.user?.id || "1"; // Use session user ID
   
   useEffect(() => {
     fetch("/api/lab4/post")
       .then(r => r.json())
       .then(data => {
-        setPosts(data);
-        setAllPosts(data);
-        // Extract unique categories from posts
+        const postsWithCounts = data.map((post: any) => ({
+          ...post,
+          likes: post.likes || [],
+          dislikes: post.dislikes || [],
+          followers: post.followers || [],
+          postFollowers: post.postFollowers || []
+        }));
+        setPosts(postsWithCounts);
+        setAllPosts(postsWithCounts);
         const uniqueCategories = [...new Set(data.flatMap((post: any) => 
           post.tags?.map((tag: any) => tag.name) || []
         ))];
@@ -62,14 +72,21 @@ export default function PostsPage() {
       return;
     }
     
+    const isLiked = likedPosts[postId];
+    
+    setLikedPosts({
+      ...likedPosts,
+      [postId]: !isLiked
+    });
+    
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, likes: [...(p.likes || []), { id: Date.now() }] }
+        ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
         : p
     ));
     setAllPosts(allPosts.map(p => 
       p.id === postId 
-        ? { ...p, likes: [...(p.likes || []), { id: Date.now() }] }
+        ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
         : p
     ));
   };
@@ -80,14 +97,21 @@ export default function PostsPage() {
       return;
     }
     
+    const isDisliked = dislikedPosts[postId];
+    
+    setDislikedPosts({
+      ...dislikedPosts,
+      [postId]: !isDisliked
+    });
+    
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, dislikes: [...(p.dislikes || []), { id: Date.now() }] }
+        ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
         : p
     ));
     setAllPosts(allPosts.map(p => 
       p.id === postId 
-        ? { ...p, dislikes: [...(p.dislikes || []), { id: Date.now() }] }
+        ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
         : p
     ));
   };
@@ -117,25 +141,62 @@ export default function PostsPage() {
     }
   };
 
-  const followUser = async (authorId: string) => {
+  const toggleFollow = (authorId: string) => {
     if (!session) {
       router.push('/lab2/login');
       return;
     }
     
-    try {
-      const response = await fetch('/api/lab9/follow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId })
-      });
-      
-      if (response.ok) {
-        alert('Following user!');
-      }
-    } catch (error) {
-      console.error('Error following user:', error);
+    const isFollowing = followedUsers[authorId];
+    
+    // Update follow state
+    setFollowedUsers({
+      ...followedUsers,
+      [authorId]: !isFollowing
+    });
+    
+    // Update follower counts in posts
+    const updatePosts = (postsList: any[]) => postsList.map(p => 
+      p.authorId === authorId 
+        ? { 
+            ...p, 
+            followers: isFollowing 
+              ? p.followers.filter((f: any) => f.id !== currentUser)
+              : [...(p.followers || []), { id: currentUser }]
+          }
+        : p
+    );
+    
+    setPosts(updatePosts(posts));
+    setAllPosts(updatePosts(allPosts));
+  };
+
+  const toggleFollowPost = (postId: string) => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
     }
+    
+    const isFollowing = followedPosts[postId];
+    
+    setFollowedPosts({
+      ...followedPosts,
+      [postId]: !isFollowing
+    });
+    
+    const updatePosts = (postsList: any[]) => postsList.map(p => 
+      p.id === postId 
+        ? { 
+            ...p, 
+            postFollowers: isFollowing 
+              ? p.postFollowers.filter((f: any) => f.id !== currentUser)
+              : [...(p.postFollowers || []), { id: currentUser }]
+          }
+        : p
+    );
+    
+    setPosts(updatePosts(posts));
+    setAllPosts(updatePosts(allPosts));
   };
 
   const addComment = async (postId: string) => {
@@ -158,11 +219,19 @@ export default function PostsPage() {
   if (loading) return <div className="max-w-4xl mx-auto mt-10">Loading...</div>;
   
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-4">
-      <h1 className="text-3xl font-bold text-black mb-6">Posts</h1>
+    <div className="min-h-screen" style={{
+      backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
+    <div className="max-w-6xl mx-auto pt-10 p-4">
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-lg">
+        <h1 className="text-3xl font-bold text-black mb-6">Posts</h1>
+      </div>
       
       {/* Search and Filter Section */}
-      <div className="mb-6 space-y-4">
+      <div className="mb-6 space-y-4 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
         <div className="flex flex-col md:flex-row gap-4">
           <input
             type="text"
@@ -198,7 +267,7 @@ export default function PostsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map(p => (
-            <div key={p.id} className="p-6 border-2 border-black rounded bg-white h-fit">
+            <div key={p.id} className="p-6 border-2 border-black rounded bg-white/95 backdrop-blur-sm h-fit shadow-lg">
             <div className="flex justify-between items-start mb-2">
               <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
                 {p.title}
@@ -221,30 +290,54 @@ export default function PostsPage() {
               )}
             </div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-black">By {p.author?.name || 'Unknown'}</p>
+              <div>
+                <p className="text-black">By {p.author?.name || 'Unknown'}</p>
+                <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
+              </div>
               {session && p.authorId !== currentUser && (
                 <button 
-                  onClick={() => followUser(p.authorId)}
-                  className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm"
+                  onClick={() => toggleFollow(p.authorId)}
+                  className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
+                    followedUsers[p.authorId] ? 'bg-black text-white' : 'bg-white text-black'
+                  }`}
                 >
-                  Follow
+                  {followedUsers[p.authorId] ? 'Unfollow' : 'Follow'}
                 </button>
               )}
             </div>
             
+            {/* Follow Post Button */}
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-sm text-gray-600">{p.postFollowers?.length || 0} post followers</span>
+              {session && (
+                <button 
+                  onClick={() => toggleFollowPost(p.id)}
+                  className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
+                    followedPosts[p.id] ? 'bg-black text-white' : 'bg-white text-black'
+                  }`}
+                >
+                  {followedPosts[p.id] ? '📌 Following Post' : '📌 Follow Post'}
+                </button>
+              )}
+            </div>
+
             {/* Like, Dislike and Comment Actions */}
             <div className="flex gap-4 mt-4">
               {session ? (
                 <>
                   <button 
                     onClick={() => toggleLike(p.id)}
-                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white"
+                    className={`flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white ${
+                      likedPosts[p.id] ? 'bg-red-500 text-white border-red-500' : 'bg-white text-black'
+                    }`}
                   >
                     ❤️ {p.likes?.length || 0}
                   </button>
                   <button 
                     onClick={() => toggleDislike(p.id)}
-                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white"
+                    className={`flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white ${
+                      dislikedPosts[p.id] ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-black'
+                    }`}
                   >
                     👎 {p.dislikes?.length || 0}
                   </button>
@@ -306,6 +399,7 @@ export default function PostsPage() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
