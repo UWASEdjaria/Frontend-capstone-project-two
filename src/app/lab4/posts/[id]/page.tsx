@@ -1,59 +1,86 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 export default function PostPage() {
   const { id } = useParams();
+  const router = useRouter();
+  const { data: session } = useSession();
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
 
   useEffect(() => {
-    // Fetch post data
     fetch(`/api/lab4/post/${id}`)
       .then(r => r.json())
       .then(data => {
         setPost(data);
         setLikes(data.likes?.length || 0);
+        setDislikes(data.dislikes?.length || 0);
+        setComments(data.comments || []);
       });
-    
-    // Fetch comments
-    fetch(`/api/lab7/comments/${id}`)
-      .then(r => r.json())
-      .then(setComments)
-      .catch(() => setComments([]));
   }, [id]);
 
-  const handleLike = async () => {
-    const res = await fetch("/api/lab8/like", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId: id }),
-    });
-    
-    if (res.ok) {
-      const data = await res.json();
-      setLiked(data.liked);
-      setLikes(data.liked ? likes + 1 : likes - 1);
+  const handleLike = () => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
     }
+    setLikes(likes + 1);
+  };
+
+  const handleDislike = () => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    setDislikes(dislikes + 1);
   };
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const res = await fetch("/api/lab7/comment", {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    
+    const res = await fetch("/api/lab6/comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId: id, content: newComment }),
+      body: JSON.stringify({ postId: id, content: newComment, authorId: "1" }),
     });
     
     if (res.ok) {
       const comment = await res.json();
       setComments([...comments, comment]);
       setNewComment("");
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/lab9/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorId: post?.authorId })
+      });
+      
+      if (response.ok) {
+        alert('Following user!');
+      }
+    } catch (error) {
+      console.error('Error following user:', error);
     }
   };
 
@@ -76,19 +103,47 @@ export default function PostPage() {
     <div className="max-w-4xl mx-auto mt-10 p-4">
       <article className="mb-8">
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-        <p className="text-gray-600 mb-6">By {post.author?.name || 'Unknown'}</p>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-gray-600">By {post.author?.name || 'Unknown'}</p>
+          {session && post.authorId !== "1" && (
+            <button
+              onClick={handleFollow}
+              className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all"
+            >
+              Follow
+            </button>
+          )}
+        </div>
         <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
       </article>
 
       <div className="flex gap-4 mb-8 pb-4 border-b">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-2 px-4 py-2 rounded border-2 ${
-            liked ? 'border-black bg-black text-white' : 'border-black bg-transparent text-black hover:bg-black hover:text-white'
-          }`}
-        >
-          ❤️ {likes}
-        </button>
+        {session ? (
+          <>
+            <button
+              onClick={handleLike}
+              className="flex items-center gap-2 px-4 py-2 rounded border-2 border-black bg-transparent text-black hover:bg-black hover:text-white transition-all"
+            >
+              ❤️ {likes}
+            </button>
+            
+            <button
+              onClick={handleDislike}
+              className="flex items-center gap-2 px-4 py-2 rounded border-2 border-black bg-transparent text-black hover:bg-black hover:text-white transition-all"
+            >
+              👎 {dislikes}
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-2 px-4 py-2 rounded border-2 border-gray-300 bg-gray-100 text-gray-500">
+              ❤️ {likes}
+            </span>
+            <span className="flex items-center gap-2 px-4 py-2 rounded border-2 border-gray-300 bg-gray-100 text-gray-500">
+              👎 {dislikes}
+            </span>
+          </>
+        )}
         
         <button
           onClick={handleShare}
@@ -105,22 +160,30 @@ export default function PostPage() {
       <section>
         <h3 className="text-2xl font-bold mb-4">Comments</h3>
         
-        <form onSubmit={handleComment} className="mb-6">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write a comment..."
-            className="w-full p-3 border-2 border-black rounded mb-2 text-black transition-all duration-300 focus:shadow-md focus:scale-105"
-            rows={3}
-            required
-          />
-          <button
-            type="submit"
-            className="border-2 border-black bg-transparent text-black px-4 py-2 rounded hover:bg-black hover:text-white"
-          >
-            Post Comment
-          </button>
-        </form>
+        {session ? (
+          <form onSubmit={handleComment} className="mb-6">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Write a comment..."
+              className="w-full p-3 border-2 border-black rounded mb-2 text-black transition-all duration-300 focus:shadow-md focus:scale-105"
+              rows={3}
+              required
+            />
+            <button
+              type="submit"
+              className="border-2 border-black bg-transparent text-black px-4 py-2 rounded hover:bg-black hover:text-white"
+            >
+              Post Comment
+            </button>
+          </form>
+        ) : (
+          <div className="mb-6 p-4 border-2 border-gray-300 rounded bg-gray-50 text-center">
+            <p className="text-gray-600">
+              <Link href="/lab2/login" className="text-black hover:underline">Login</Link> or <Link href="/lab2/signup" className="text-black hover:underline">Sign up</Link> to comment
+            </p>
+          </div>
+        )}
 
         <div className="space-y-4">
           {comments.map((comment, index) => (

@@ -1,0 +1,42 @@
+import { NextResponse } from "next/server";
+import prisma from "../../../../../lib/prisma";
+
+export async function POST(request: Request) {
+  try {
+    const { content, postId, authorId } = await request.json();
+    
+    const comment = await prisma.comment.create({
+      data: {
+        content,
+        postId,
+        authorId,
+      },
+      include: {
+        author: true,
+      },
+    });
+    
+    return NextResponse.json(comment);
+  } catch (error) {
+    console.error("Error creating comment:", error);
+    return NextResponse.json({ error: "Failed to create comment" }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const postId = searchParams.get("postId");
+  
+  try {
+    const comments = await prisma.comment.findMany({
+      where: { postId: postId! },
+      include: { author: true },
+      orderBy: { createdAt: "desc" },
+    });
+    
+    return NextResponse.json(comments);
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+    return NextResponse.json([], { status: 500 });
+  }
+}
