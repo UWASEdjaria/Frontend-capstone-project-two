@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 
 export default function PostsPage() {
   const [posts, setPosts] = useState<any[]>([]);
-<<<<<<< HEAD
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
   const currentUser = "1"; // Default user
@@ -110,24 +109,9 @@ export default function PostsPage() {
                 ))}
               </div>
             )}
-=======
-  useEffect(() => { fetch("/api/lab4/post").then(r => r.json()).then(setPosts) }, []);
-  return (
-    <div className="max-w-4xl mx-auto mt-10">
-      <h1 className="text-3xl font-bold text-[#ff4d6d] mb-4">Posts</h1>
-      {posts.map(p => (
-        <div key={p.id} className="p-4 mb-4 border rounded bg-white">
-          <Link href={`/lab4/posts/${p.slug || p.id}`} className="text-xl font-bold text-purple-600 hover:underline">
-            {p.title}
-          </Link>
-          <p className="text-gray-600 mt-2">By {p.author?.name || 'Unknown'}</p>
-          <div className="flex gap-4 mt-2 text-sm text-gray-500">
-            <span>❤️ {p.likes?.length || 0} likes</span>
-            <span>💬 {p.comments?.length || 0} comments</span>
->>>>>>> 00f6a054bff76e1814e3c48ad3dcda9966845e49
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        ))
+      )}
+    </div>
+  );
 }
