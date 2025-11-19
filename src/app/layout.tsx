@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-white text-black font-sans">
         <Providers>
           <Header />
-          <main className="flex-1 flex flex-col min-h-screen bg-white">{children}</main>
+          <main className="flex-1 flex flex-col min-h-screen bg-gray-900">{children}</main>
         </Providers>
 
         <footer className="bg-white text-center py-4 border-t border-transparent text-black font-sans">
