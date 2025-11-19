@@ -27,28 +27,25 @@ export default function Header() {
             Feed
           </Link>
           
-          {session ? (
-            <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6">
+            <Link href="/lab2/login" className="text-black hover:text-black">
+              Login
+            </Link>
+            <Link href="/lab2/signup" className="text-black hover:text-black">
+              Sign Up
+            </Link>
+            {session && (
               <Link href="/lab2/profile" className="text-black hover:text-black">
                 Profile
               </Link>
-              <button
-                onClick={() => signOut()}
-                className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-6">
-              <Link href="/lab2/login" className="text-black hover:text-black">
-                Login
-              </Link>
-              <Link href="/lab2/signup" className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105">
-                Sign Up
-              </Link>
-            </div>
-          )}
+            )}
+            <button
+              onClick={() => signOut()}
+              className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </nav>
     </header>
