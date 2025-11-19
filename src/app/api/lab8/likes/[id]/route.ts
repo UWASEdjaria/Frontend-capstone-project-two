@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
-
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const likes = await prisma.like.findMany({
-    where: { postId: parseInt(params.id) },
+    where: { postId: id },
     include: {
       user: true,
     },

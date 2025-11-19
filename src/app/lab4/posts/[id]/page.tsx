@@ -118,7 +118,7 @@ export default function PostPage() {
             <p className="text-sm text-gray-500">{followers} followers</p>
           </div>
           <div className="flex gap-2">
-            {session && (post.authorId === session?.user?.id || post.authorId === session?.user?.email) && (
+            {session && (post.authorId === session?.user?.email) && (
               <Link 
                 href={`/lab3/editor?edit=${post.id}`}
                 className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all"
@@ -126,7 +126,7 @@ export default function PostPage() {
                 Edit Post
               </Link>
             )}
-            {session && post.authorId !== session?.user?.id && post.authorId !== session?.user?.email && (
+            {session && post.authorId !== session?.user?.email && (
               <button
                 onClick={handleFollow}
                 className={`px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all ${

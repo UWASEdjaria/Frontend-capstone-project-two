@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const slug = title.toLowerCase().replace(/\s+/g, "-");
 
   // For testing, you can use a fixed authorId
-  const authorId = "1"; 
+  const authorId = "1"; // replace with actual user id
 
   const post = await prisma.post.create({
     data: {

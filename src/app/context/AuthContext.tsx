@@ -2,7 +2,11 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext<{
+  token: string | null;
+  login: (t: string) => void;
+  logout: () => void;
+} | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);

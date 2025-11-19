@@ -19,7 +19,7 @@ export default function PostsPage() {
   const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
-  const currentUser = session?.user?.id || session?.user?.email || "1"; // Use session user ID
+  const currentUser = session?.user?.email || "1"; // Use session user email
   
   useEffect(() => {
     fetch("/api/lab4/post")
@@ -36,7 +36,7 @@ export default function PostsPage() {
         setAllPosts(postsWithCounts);
         const uniqueCategories = [...new Set(data.flatMap((post: any) => 
           post.tags?.map((tag: any) => tag.name) || []
-        ))];
+        ))] as string[];
         setCategories(uniqueCategories);
         setLoading(false);
       })
