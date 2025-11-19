@@ -3,7 +3,7 @@ import prisma from "../../../../../lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const { title, content, tags } = await request.json();
+    const { title, content, tags, imageUrl } = await request.json();
     
     // Generate slug from title
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
         slug,
         content,
         excerpt,
+        imageUrl: imageUrl || null,
         published: true,
         publishedAt: new Date(),
         authorId: "1",

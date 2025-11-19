@@ -14,6 +14,12 @@ export default function PostPage() {
   const [newComment, setNewComment] = useState("");
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
+  const [followers, setFollowers] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [postFollowers, setPostFollowers] = useState(0);
+  const [isFollowingPost, setIsFollowingPost] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isDisliked, setIsDisliked] = useState(false);
 
   useEffect(() => {
     fetch(`/api/lab4/post/${id}`)
@@ -22,6 +28,8 @@ export default function PostPage() {
         setPost(data);
         setLikes(data.likes?.length || 0);
         setDislikes(data.dislikes?.length || 0);
+        setFollowers(data.followers?.length || 0);
+        setPostFollowers(data.postFollowers?.length || 0);
         setComments(data.comments || []);
       });
   }, [id]);
@@ -31,7 +39,8 @@ export default function PostPage() {
       router.push('/lab2/login');
       return;
     }
-    setLikes(likes + 1);
+    setIsLiked(!isLiked);
+    setLikes(isLiked ? likes - 1 : likes + 1);
   };
 
   const handleDislike = () => {
@@ -39,7 +48,8 @@ export default function PostPage() {
       router.push('/lab2/login');
       return;
     }
-    setDislikes(dislikes + 1);
+    setIsDisliked(!isDisliked);
+    setDislikes(isDisliked ? dislikes - 1 : dislikes + 1);
   };
 
   const handleComment = async (e: React.FormEvent) => {
@@ -63,25 +73,24 @@ export default function PostPage() {
     }
   };
 
-  const handleFollow = async () => {
+  const handleFollow = () => {
     if (!session) {
       router.push('/lab2/login');
       return;
     }
     
-    try {
-      const response = await fetch('/api/lab9/follow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId: post?.authorId })
-      });
-      
-      if (response.ok) {
-        alert('Following user!');
-      }
-    } catch (error) {
-      console.error('Error following user:', error);
+    setIsFollowing(!isFollowing);
+    setFollowers(isFollowing ? followers - 1 : followers + 1);
+  };
+
+  const handleFollowPost = () => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
     }
+    
+    setIsFollowingPost(!isFollowingPost);
+    setPostFollowers(isFollowingPost ? postFollowers - 1 : postFollowers + 1);
   };
 
   const handleShare = () => {
@@ -104,32 +113,55 @@ export default function PostPage() {
       <article className="mb-8">
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
         <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-600">By {post.author?.name || 'Unknown'}</p>
+          <div>
+            <p className="text-gray-600">By {post.author?.name || 'Unknown'}</p>
+            <p className="text-sm text-gray-500">{followers} followers</p>
+          </div>
           {session && post.authorId !== "1" && (
             <button
               onClick={handleFollow}
-              className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all"
+              className={`px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all ${
+                isFollowing ? 'bg-black text-white' : 'bg-white text-black'
+              }`}
             >
-              Follow
+              {isFollowing ? 'Unfollow' : 'Follow'}
             </button>
           )}
         </div>
         <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
       </article>
 
+      <div className="flex justify-between items-center mb-4 pb-4 border-b">
+        <span className="text-gray-600">{postFollowers} people following this post</span>
+        {session && (
+          <button
+            onClick={handleFollowPost}
+            className={`px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all ${
+              isFollowingPost ? 'bg-black text-white' : 'bg-white text-black'
+            }`}
+          >
+            {isFollowingPost ? '📌 Following Post' : '📌 Follow Post'}
+          </button>
+        )}
+      </div>
+
       <div className="flex gap-4 mb-8 pb-4 border-b">
         {session ? (
           <>
             <button
               onClick={handleLike}
-              className="flex items-center gap-2 px-4 py-2 rounded border-2 border-black bg-transparent text-black hover:bg-black hover:text-white transition-all"
+              className={`flex items-center gap-2 px-4 py-2 rounded border-2 transition-all hover:bg-black hover:text-white ${
+                isLiked ? 'bg-red-500 text-white border-red-500' : 'border-black bg-transparent text-black'
+              }`}
             >
               ❤️ {likes}
             </button>
             
             <button
               onClick={handleDislike}
-              className="flex items-center gap-2 px-4 py-2 rounded border-2 border-black bg-transparent text-black hover:bg-black hover:text-white transition-all"
+              className={`flex items-center gap-2 px-4 py-2 rounded border-2 transition-all hover:bg-black hover:text-white ${
+                isDisliked ? 'bg-blue-500 text-white border-blue-500' : 'border-black bg-transparent text-black'
+              }`}
             >
               👎 {dislikes}
             </button>

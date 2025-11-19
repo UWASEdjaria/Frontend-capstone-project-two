@@ -16,6 +16,7 @@ export default function Editor() {
   const [category, setCategory] = useState("");
   const [isClient, setIsClient] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     setIsClient(true);
@@ -29,12 +30,24 @@ export default function Editor() {
           setTitle(data.title);
           setContent(data.content);
           setCategory(data.tags?.[0]?.name || "");
+          setImageUrl(data.imageUrl || "");
         })
         .catch(err => console.error('Error loading post:', err));
     }
   }, [editId]);
 
   const categories = ["Technology", "Writing", "Business", "Lifestyle"];
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImageUrl(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   if (!session) {
     return (
@@ -74,7 +87,8 @@ export default function Editor() {
         body: JSON.stringify({ 
           title: title.trim(), 
           content: content.trim(),
-          tags: [category]
+          tags: [category],
+          imageUrl: imageUrl
         })
       });
       
@@ -90,9 +104,14 @@ export default function Editor() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen py-8" style={{
+      backgroundImage: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-lg border-2 border-gray-300 p-6 md:p-8">
+        <div className="bg-white/50 backdrop-blur-sm rounded-lg shadow-xl border-2 border-gray-300 p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-8 text-black text-center">{isEditing ? 'Edit Story' : 'Write a Story'}</h1>
           
           <div className="space-y-6">
@@ -113,6 +132,21 @@ export default function Editor() {
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
+            
+            <div>
+              <label className="block text-black font-medium mb-2">Upload Image (optional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none"
+              />
+              {imageUrl && (
+                <div className="mt-4">
+                  <img src={imageUrl} alt="Preview" className="max-w-xs h-auto rounded-lg border-2 border-gray-300" />
+                </div>
+              )}
+            </div>
             
             <div className="min-h-[400px] border-2 border-gray-300 rounded-lg">
               {isClient && (
