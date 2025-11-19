@@ -117,16 +117,26 @@ export default function PostPage() {
             <p className="text-gray-600">By {post.author?.name || 'Unknown'}</p>
             <p className="text-sm text-gray-500">{followers} followers</p>
           </div>
-          {session && post.authorId !== "1" && (
-            <button
-              onClick={handleFollow}
-              className={`px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all ${
-                isFollowing ? 'bg-black text-white' : 'bg-white text-black'
-              }`}
-            >
-              {isFollowing ? 'Unfollow' : 'Follow'}
-            </button>
-          )}
+          <div className="flex gap-2">
+            {session && (post.authorId === session?.user?.id || post.authorId === session?.user?.email) && (
+              <Link 
+                href={`/lab3/editor?edit=${post.id}`}
+                className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all"
+              >
+                Edit Post
+              </Link>
+            )}
+            {session && post.authorId !== session?.user?.id && post.authorId !== session?.user?.email && (
+              <button
+                onClick={handleFollow}
+                className={`px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all ${
+                  isFollowing ? 'bg-black text-white' : 'bg-white text-black'
+                }`}
+              >
+                {isFollowing ? 'Unfollow' : 'Follow'}
+              </button>
+            )}
+          </div>
         </div>
         <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
       </article>

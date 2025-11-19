@@ -19,7 +19,7 @@ export default function PostsPage() {
   const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
-  const currentUser = session?.user?.id || "1"; // Use session user ID
+  const currentUser = session?.user?.id || session?.user?.email || "1"; // Use session user ID
   
   useEffect(() => {
     fetch("/api/lab4/post")
@@ -226,12 +226,12 @@ export default function PostsPage() {
       backgroundAttachment: 'fixed'
     }}>
     <div className="max-w-6xl mx-auto pt-10 p-4">
-      <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-lg">
+      <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-lg">
         <h1 className="text-3xl font-bold text-black mb-6">Posts</h1>
       </div>
       
       {/* Search and Filter Section */}
-      <div className="mb-6 space-y-4 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+      <div className="mb-6 space-y-4 bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg">
         <div className="flex flex-col md:flex-row gap-4">
           <input
             type="text"
@@ -267,12 +267,12 @@ export default function PostsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map(p => (
-            <div key={p.id} className="p-6 border-2 border-black rounded bg-white/95 backdrop-blur-sm h-fit shadow-lg">
+            <div key={p.id} className="p-6 border-2 border-black rounded bg-white/80 backdrop-blur-sm h-fit shadow-lg">
             <div className="flex justify-between items-start mb-2">
               <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
                 {p.title}
               </Link>
-              {session && p.authorId === currentUser && (
+              {session && (p.authorId === currentUser || p.authorId === session?.user?.email) && (
                 <div className="flex gap-2 ml-2">
                   <Link 
                     href={`/lab3/editor?edit=${p.id}`}
