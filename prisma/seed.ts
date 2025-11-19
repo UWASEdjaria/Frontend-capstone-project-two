@@ -13,6 +13,23 @@ async function main() {
     },
   })
 
+  // Create tags first
+  const tags = [
+    { name: 'Welcome' },
+    { name: 'Tutorial' },
+    { name: 'Guidelines' },
+    { name: 'Technology' },
+    { name: 'Writing' }
+  ];
+
+  for (const tag of tags) {
+    await prisma.tag.upsert({
+      where: { name: tag.name },
+      update: {},
+      create: tag,
+    });
+  }
+
   // Create initial posts
   const posts = [
     {
@@ -22,6 +39,7 @@ async function main() {
       excerpt: 'Welcome to our Medium clone platform',
       published: true,
       publishedAt: new Date(),
+      tags: ['Welcome', 'Technology']
     },
     {
       title: 'Getting Started with Writing',
@@ -30,6 +48,7 @@ async function main() {
       excerpt: 'Learn how to create your first post',
       published: true,
       publishedAt: new Date(),
+      tags: ['Tutorial', 'Writing']
     },
     {
       title: 'Community Guidelines',
@@ -38,16 +57,22 @@ async function main() {
       excerpt: 'Guidelines for our writing community',
       published: true,
       publishedAt: new Date(),
+      tags: ['Guidelines']
     }
   ]
 
   for (const post of posts) {
+    const { tags: postTags, ...postData } = post;
+    
     await prisma.post.upsert({
       where: { slug: post.slug },
       update: {},
       create: {
-        ...post,
+        ...postData,
         authorId: user.id,
+        tags: {
+          connect: postTags.map(tagName => ({ name: tagName }))
+        }
       },
     })
   }
