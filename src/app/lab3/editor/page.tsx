@@ -1,152 +1,141 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
 export default function Editor() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
-  const [drafts, setDrafts] = useState<any[]>([]);
-  const [preview, setPreview] = useState(false);
-  const editor = useRef(null);
+  const [category, setCategory] = useState("");
+  const [isClient, setIsClient] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  if (status === "loading") {
-    return <div className="max-w-4xl mx-auto p-4 mt-10 text-black">Loading...</div>;
-  }
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Load post for editing if editId is provided
+    if (editId) {
+      setIsEditing(true);
+      fetch(`/api/lab4/post/${editId}`)
+        .then(r => r.json())
+        .then(data => {
+          setTitle(data.title);
+          setContent(data.content);
+          setCategory(data.tags?.[0]?.name || "");
+        })
+        .catch(err => console.error('Error loading post:', err));
+    }
+  }, [editId]);
+
+  const categories = ["Technology", "Writing", "Business", "Lifestyle"];
 
   if (!session) {
     return (
-      <div className="max-w-4xl mx-auto p-4 mt-10">
-        <div className="text-center p-8 border-2 border-black rounded bg-white">
-          <h2 className="text-2xl font-bold text-black mb-4">Authentication Required</h2>
-          <p className="text-black mb-6">You need to be logged in to create posts.</p>
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={() => router.push('/lab2/login')}
-              className="border-2 border-black bg-transparent text-black px-6 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
-            >
-              Login
-            </button>
-            <button
-              onClick={() => router.push('/lab2/signup')}
-              className="border-2 border-black bg-transparent text-black px-6 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
-            >
-              Sign Up
-            </button>
-          </div>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-lg border-2 border-gray-300 p-8">
+          <h2 className="text-2xl font-bold mb-4 text-black text-center">Please Login</h2>
+          <p className="mb-6 text-gray-600 text-center">You need to login to write posts.</p>
+          <button 
+            onClick={() => router.push('/lab2/login')} 
+            className="w-full border-2 border-black px-4 py-3 rounded-lg hover:bg-black hover:text-white text-black font-medium transition-all"
+          >
+            Login
+          </button>
         </div>
       </div>
     );
   }
 
   const config = {
-    readonly: false,
-    placeholder: "Start typing...",
-    buttons: ["bold", "italic", "underline", "|", "ul", "ol", "|", "link", "image", "|", "source"]
-  };
-
-  const saveDraft = () => {
-    const draft = { id: Date.now(), title: title || "Untitled", content, date: new Date().toLocaleDateString() };
-    setDrafts([draft, ...drafts]);
-    alert("Draft saved!");
+    placeholder: "Write your story...",
+    buttons: ["bold", "italic", "ul", "ol", "link"]
   };
 
   const publishPost = async () => {
-    if (!title.trim() || !content.trim()) {
-      alert("Please write both a title and content before publishing!");
+    if (!title || !content || !category) {
+      alert("Please fill title, content and category!");
       return;
     }
     
     try {
-      const response = await fetch("/api/lab4/post", {
-        method: "POST",
+      const url = isEditing ? `/api/lab4/post/${editId}` : "/api/lab4/post";
+      const method = isEditing ? "PUT" : "POST";
+      
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), content: content.trim() })
+        body: JSON.stringify({ 
+          title: title.trim(), 
+          content: content.trim(),
+          tags: [category]
+        })
       });
       
       if (response.ok) {
-        alert("Post published successfully!");
-        setTitle("");
-        setContent("");
+        alert(isEditing ? "Post updated!" : "Post published!");
+        router.push("/lab4/posts");
       } else {
-        alert("Failed to publish post");
+        alert(isEditing ? "Failed to update" : "Failed to publish");
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Error publishing post");
+      alert(isEditing ? "Error updating" : "Error publishing");
     }
   };
 
-  const isPublishDisabled = !title.trim() || !content.trim();
-
-  const loadDraft = (draft: any) => {
-    setTitle(draft.title);
-    setContent(draft.content);
-    setPreview(false);
-  };
-
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-black">Rich Text Editor</h1>
-      
-      <div className="mb-4 flex gap-2">
-        <button onClick={() => setPreview(!preview)} className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105">
-          {preview ? "Edit" : "Preview"}
-        </button>
-        <button onClick={saveDraft} className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105">
-          Save Draft
-        </button>
-        <button 
-          onClick={publishPost} 
-          disabled={isPublishDisabled}
-          className={`border-2 px-4 py-2 rounded transition-all duration-300 ${
-            isPublishDisabled 
-              ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed' 
-              : 'border-black bg-transparent text-black hover:bg-black hover:text-white hover:scale-105'
-          }`}
-        >
-          Publish
-        </button>
-      </div>
-
-      {!preview ? (
-        <div>
-          <input
-            placeholder="Title"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="w-full p-2 mb-4 border-2 border-black rounded text-lg text-black transition-all duration-300 focus:shadow-md focus:scale-105"
-          />
-          <JoditEditor
-            ref={editor}
-            value={content}
-            config={config}
-            onBlur={newContent => setContent(newContent)}
-          />
-        </div>
-      ) : (
-        <div className="border p-4 rounded">
-          <h2 className="text-xl font-bold mb-4">{title || "Untitled"}</h2>
-          <div dangerouslySetInnerHTML={{ __html: content }} />
-        </div>
-      )}
-
-      {drafts.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-lg font-bold mb-2">Drafts</h3>
-          {drafts.map(draft => (
-            <div key={draft.id} className="p-2 border rounded mb-2 flex justify-between">
-              <span>{draft.title} - {draft.date}</span>
-              <button onClick={() => loadDraft(draft)} className="text-orange-500">Load</button>
+    <div className="min-h-screen bg-gray-100 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white rounded-lg shadow-lg border-2 border-gray-300 p-6 md:p-8">
+          <h1 className="text-3xl font-bold mb-8 text-black text-center">{isEditing ? 'Edit Story' : 'Write a Story'}</h1>
+          
+          <div className="space-y-6">
+            <input
+              placeholder="Story title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg text-black bg-white focus:border-blue-500 focus:outline-none"
+            />
+            
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">Choose category</option>
+              {categories.map((cat: string) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            
+            <div className="min-h-[400px] border-2 border-gray-300 rounded-lg">
+              {isClient && (
+                <JoditEditor
+                  value={content}
+                  config={config}
+                  onBlur={(newContent: string) => setContent(newContent)}
+                  onChange={(newContent: string) => setContent(newContent)}
+                />
+              )}
             </div>
-          ))}
+            
+            <div className="text-center">
+              <button 
+                onClick={publishPost}
+                className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-800 font-medium text-lg transition-colors"
+              >
+{isEditing ? 'Update Story' : 'Publish Story'}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

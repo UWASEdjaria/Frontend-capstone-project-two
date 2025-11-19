@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function PostsPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
-  const [userLikes, setUserLikes] = useState<{[key: string]: boolean}>({});
-  const [userDislikes, setUserDislikes] = useState<{[key: string]: boolean}>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
@@ -56,22 +56,86 @@ export default function PostsPage() {
     setPosts(filtered);
   }, [searchTerm, selectedCategory, allPosts]);
 
-  const toggleLike = async (postId: string) => {
-    // Always add like (keep increasing)
+  const toggleLike = (postId: string) => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, likes: [...(p.likes || []), { userId: currentUser + Date.now() }] }
+        ? { ...p, likes: [...(p.likes || []), { id: Date.now() }] }
+        : p
+    ));
+    setAllPosts(allPosts.map(p => 
+      p.id === postId 
+        ? { ...p, likes: [...(p.likes || []), { id: Date.now() }] }
         : p
     ));
   };
 
-  const toggleDislike = async (postId: string) => {
-    // Always add dislike (keep increasing)
+  const toggleDislike = (postId: string) => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, dislikes: [...(p.dislikes || []), { userId: currentUser + Date.now() }] }
+        ? { ...p, dislikes: [...(p.dislikes || []), { id: Date.now() }] }
         : p
     ));
+    setAllPosts(allPosts.map(p => 
+      p.id === postId 
+        ? { ...p, dislikes: [...(p.dislikes || []), { id: Date.now() }] }
+        : p
+    ));
+  };
+
+  const deletePost = async (postId: string) => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    
+    if (confirm('Are you sure you want to delete this post?')) {
+      try {
+        const response = await fetch(`/api/lab4/post/${postId}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          setPosts(posts.filter(p => p.id !== postId));
+          setAllPosts(allPosts.filter(p => p.id !== postId));
+        } else {
+          alert('Failed to delete post');
+        }
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('Error deleting post');
+      }
+    }
+  };
+
+  const followUser = async (authorId: string) => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/lab9/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorId })
+      });
+      
+      if (response.ok) {
+        alert('Following user!');
+      }
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
   };
 
   const addComment = async (postId: string) => {
@@ -135,10 +199,38 @@ export default function PostsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map(p => (
             <div key={p.id} className="p-6 border-2 border-black rounded bg-white h-fit">
-            <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline">
-              {p.title}
-            </Link>
-            <p className="text-black mt-2">By {p.author?.name || 'Unknown'}</p>
+            <div className="flex justify-between items-start mb-2">
+              <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
+                {p.title}
+              </Link>
+              {session && p.authorId === currentUser && (
+                <div className="flex gap-2 ml-2">
+                  <Link 
+                    href={`/lab3/editor?edit=${p.id}`}
+                    className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all"
+                  >
+                    Edit
+                  </Link>
+                  <button 
+                    onClick={() => deletePost(p.id)}
+                    className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-black">By {p.author?.name || 'Unknown'}</p>
+              {session && p.authorId !== currentUser && (
+                <button 
+                  onClick={() => followUser(p.authorId)}
+                  className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm"
+                >
+                  Follow
+                </button>
+              )}
+            </div>
             
             {/* Like, Dislike and Comment Actions */}
             <div className="flex gap-4 mt-4">
@@ -146,15 +238,15 @@ export default function PostsPage() {
                 <>
                   <button 
                     onClick={() => toggleLike(p.id)}
-                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black group"
+                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white"
                   >
-                    <span className="group-hover:text-white text-black">❤️ {p.likes?.length || 0}</span>
+                    ❤️ {p.likes?.length || 0}
                   </button>
                   <button 
                     onClick={() => toggleDislike(p.id)}
-                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black group"
+                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white"
                   >
-                    <span className="group-hover:text-white text-black">👎 {p.dislikes?.length || 0}</span>
+                    👎 {p.dislikes?.length || 0}
                   </button>
                 </>
               ) : (

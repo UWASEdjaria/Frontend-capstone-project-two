@@ -19,9 +19,9 @@ export default function Login() {
     });
 
     if (res?.ok) {
-      setMessage("Login successful! Redirecting to your profile...");
+      setMessage("Login successful! Redirecting to posts...");
       setTimeout(() => {
-        router.push("/lab2/profile");
+        router.push("/lab4/posts");
       }, 1500);
     } else {
       setMessage("Login failed. Please check your credentials.");
