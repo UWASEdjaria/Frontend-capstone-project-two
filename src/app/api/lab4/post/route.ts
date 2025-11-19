@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../../../../lib/prisma";
 
 export async function POST(request: Request) {
   try {
     const { title, content } = await request.json();
     
+    // Generate slug from title
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    
     const post = await prisma.post.create({
       data: {
         title,
+        slug,
         content,
-        authorId: 1, // Default user
+        authorId: "1", // Default user ID as string
       },
       include: {
         author: true,

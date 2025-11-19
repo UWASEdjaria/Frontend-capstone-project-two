@@ -49,18 +49,18 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-6">
             <Link 
               href="/lab2/signup" 
-              className="p-6 border-2 border-black rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
+              className="block p-6 border-2 border-black rounded transition-all duration-300 hover:bg-black hover:scale-105 group"
             >
-              <h3 className="text-xl font-bold text-black mb-2">New to Medium?</h3>
-              <p className="text-black">Sign up to start writing and engaging with the community</p>
+              <h3 className="text-xl font-bold text-black mb-2 group-hover:text-white">New to Medium?</h3>
+              <p className="text-black group-hover:text-white">Sign up to start writing and engaging with the community</p>
             </Link>
             
             <Link 
               href="/lab2/login" 
-              className="p-6 border-2 border-black rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
+              className="block p-6 border-2 border-black rounded transition-all duration-300 hover:bg-black hover:scale-105 group"
             >
-              <h3 className="text-xl font-bold text-black mb-2">Already have an account?</h3>
-              <p className="text-black">Log in to continue your writing journey</p>
+              <h3 className="text-xl font-bold text-black mb-2 group-hover:text-white">Already have an account?</h3>
+              <p className="text-black group-hover:text-white">Log in to continue your writing journey</p>
             </Link>
           </div>
         </div>
