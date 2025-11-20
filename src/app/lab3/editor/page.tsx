@@ -154,7 +154,6 @@ function EditorContent() {
                   value={content}
                   config={config}
                   onBlur={(newContent: string) => setContent(newContent)}
-                  onChange={(newContent: string) => setContent(newContent)}
                 />
               )}
             </div>
