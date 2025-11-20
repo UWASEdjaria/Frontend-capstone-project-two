@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     data: {
       title,
       content,
-      slug,
+      slug,//Converts the post title to a URL-friendly string
       excerpt,
       authorId: "1",
     },
