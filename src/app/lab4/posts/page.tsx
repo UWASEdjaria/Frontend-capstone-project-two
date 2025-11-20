@@ -137,32 +137,32 @@ export default function PostsPage() {
     }
   };
 
-  const toggleFollow = (authorId: string) => {
+  const toggleFollow = (postId: string) => {
     if (!session) {
       router.push('/lab2/login');
       return;
     }
-    
-    const isFollowing = followedUsers[authorId];
-    
-    // Update follow state
+
+    const isFollowing = followedUsers[postId];
+
+    // Update follow state per post
     setFollowedUsers({
       ...followedUsers,
-      [authorId]: !isFollowing
+      [postId]: !isFollowing
     });
-    
-    // Update follower counts in posts
-    const updatePosts = (postsList: any[]) => postsList.map(p => 
-      p.authorId === authorId 
-        ? { 
-            ...p, 
-            followers: isFollowing 
+
+    // Update follower counts in the specific post
+    const updatePosts = (postsList: any[]) => postsList.map(p =>
+      p.id === postId
+        ? {
+            ...p,
+            followers: isFollowing
               ? p.followers.filter((f: any) => f.id !== currentUser)
               : [...(p.followers || []), { id: currentUser }]
           }
         : p
     );
-    
+
     setPosts(updatePosts(posts));
     setAllPosts(updatePosts(allPosts));
   };
@@ -301,13 +301,13 @@ export default function PostsPage() {
                 <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
               </div>
               {session && p.authorId !== currentUser && (
-                <button 
-                  onClick={() => toggleFollow(p.authorId)}
+                <button
+                  onClick={() => toggleFollow(p.id)}
                   className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
-                    followedUsers[p.authorId] ? 'bg-black text-white' : 'bg-white text-black'
+                    followedUsers[p.id] ? 'bg-black text-white' : 'bg-white text-black'
                   }`}
                 >
-                  {followedUsers[p.authorId] ? 'Unfollow' : 'Follow'}
+                  {followedUsers[p.id] ? 'Unfollow' : 'Follow'}
                 </button>
               )}
             </div>
