@@ -22,7 +22,7 @@ function EditorContent() {
   useEffect(() => {
     // Load post for editing if editId is provided
     if (editId) {
-      fetch(`/api/lab4/post/${editId}`)
+      fetch(`/api/lab3/posts/${editId}`)
         .then(r => r.json())
         .then(data => {
           setTitle(data.title);
@@ -69,30 +69,59 @@ function EditorContent() {
     buttons: ["bold", "italic", "ul", "ol", "link"]
   };
 
-  const publishPost = async () => {
-    if (!title || !content || !category) {
-      alert("Please fill title, content and category!");
+  const saveAsDraft = async () => {
+    if (!title || !content) {
+      alert("Please fill title and content!");
       return;
     }
-    
+
     try {
-      const url = isEditing ? `/api/lab4/post/${editId}` : "/api/lab4/post";
+      const url = isEditing ? `/api/lab3/posts/${editId}` : "/api/lab3/posts";
       const method = isEditing ? "PUT" : "POST";
-      
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title: title.trim(), 
-          content: content.trim(),
-          tags: [category],
-          imageUrl: imageUrl
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim()
         })
       });
-      
+
+      if (response.ok) {
+        alert("Draft saved!");
+        router.push("/lab3");
+      } else {
+        alert("Failed to save draft");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving draft");
+    }
+  };
+
+  const publishPost = async () => {
+    if (!title || !content) {
+      alert("Please fill title and content!");
+      return;
+    }
+
+    try {
+      const url = isEditing ? `/api/lab3/posts/${editId}` : "/api/lab3/posts";
+      const method = isEditing ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim()
+        })
+      });
+
       if (response.ok) {
         alert(isEditing ? "Post updated!" : "Post published!");
-        router.push("/lab4/posts");
+        router.push("/lab3");
       } else {
         alert(isEditing ? "Failed to update" : "Failed to publish");
       }
@@ -157,8 +186,14 @@ function EditorContent() {
               />
             </div>
             
-            <div className="text-center">
-              <button 
+            <div className="text-center space-x-4">
+              <button
+                onClick={saveAsDraft}
+                className="px-8 py-4 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white font-medium text-lg transition-colors"
+              >
+                Save as Draft
+              </button>
+              <button
                 onClick={publishPost}
                 className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-800 font-medium text-lg transition-colors"
               >
