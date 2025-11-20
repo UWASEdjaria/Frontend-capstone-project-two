@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +10,7 @@ export default function PostsPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
@@ -250,6 +252,7 @@ export default function PostsPage() {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="p-3 border-2 border-black rounded text-black bg-white"
+            aria-label="Select category"
           >
             <option value="">All Categories</option>
             {categories.map(category => (
@@ -295,7 +298,7 @@ export default function PostsPage() {
                 </div>
               )}
             </div>
-on writing without login            <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center justify-between mt-2">
               <div>
                 <p className="text-black">By {p.author?.name || 'Unknown'}</p>
                 <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
