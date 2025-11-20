@@ -2,9 +2,10 @@ import prisma from '../src/lib/prisma'
 import bcrypt from 'bcryptjs'
 
 async function main() {
-  // Create a default user with hashed password
+  // Create multiple demo users
   const hashedPassword = await bcrypt.hash('password123', 10);
-  const user = await prisma.user.upsert({
+  
+  const user1 = await prisma.user.upsert({
     where: { email: 'demo@example.com' },
     update: {},
     create: {
@@ -13,7 +14,29 @@ async function main() {
       email: 'demo@example.com',
       password: hashedPassword,
     },
-  })
+  });
+  
+  const user2 = await prisma.user.upsert({
+    where: { email: 'john@example.com' },
+    update: {},
+    create: {
+      id: '2',
+      name: 'John Writer',
+      email: 'john@example.com',
+      password: hashedPassword,
+    },
+  });
+  
+  const user3 = await prisma.user.upsert({
+    where: { email: 'jane@example.com' },
+    update: {},
+    create: {
+      id: '3',
+      name: 'Jane Author',
+      email: 'jane@example.com',
+      password: hashedPassword,
+    },
+  });
 
   // Create tags first
   const tags = [
@@ -32,7 +55,7 @@ async function main() {
     });
   }
 
-  // Create initial posts
+  // Create initial posts with different authors
   const posts = [
     {
       title: 'Welcome to Medium Clone',
@@ -41,7 +64,8 @@ async function main() {
       excerpt: 'Welcome to our Medium clone platform',
       published: true,
       publishedAt: new Date(),
-      tags: ['Welcome', 'Technology']
+      tags: ['Welcome', 'Technology'],
+      authorId: user1.id
     },
     {
       title: 'Getting Started with Writing',
@@ -50,7 +74,8 @@ async function main() {
       excerpt: 'Learn how to create your first post',
       published: true,
       publishedAt: new Date(),
-      tags: ['Tutorial', 'Writing']
+      tags: ['Tutorial', 'Writing'],
+      authorId: user2.id
     },
     {
       title: 'Community Guidelines',
@@ -59,7 +84,8 @@ async function main() {
       excerpt: 'Guidelines for our writing community',
       published: true,
       publishedAt: new Date(),
-      tags: ['Guidelines']
+      tags: ['Guidelines'],
+      authorId: user3.id
     }
   ]
 
@@ -71,7 +97,6 @@ async function main() {
       update: {},
       create: {
         ...postData,
-        authorId: user.id,
         tags: {
           connect: postTags.map(tagName => ({ name: tagName }))
         }

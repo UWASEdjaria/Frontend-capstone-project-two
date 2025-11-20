@@ -31,14 +31,16 @@ export default function Home() {
       return;
     }
     
+    const isCurrentlyLiked = likedPosts[postId];
+    
     setLikedPosts({
       ...likedPosts,
-      [postId]: !likedPosts[postId]
+      [postId]: !isCurrentlyLiked
     });
     
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, likes: likedPosts[postId] ? (p.likes || []).slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
+        ? { ...p, likes: isCurrentlyLiked ? (p.likes || []).slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
         : p
     ));
   };
@@ -48,6 +50,9 @@ export default function Home() {
       router.push('/lab2/login');
       return;
     }
+    
+    console.log('Toggling follow for authorId:', authorId);
+    console.log('Current followedUsers state:', followedUsers);
     
     setFollowedUsers({
       ...followedUsers,
@@ -124,7 +129,7 @@ export default function Home() {
                           onClick={() => toggleLike(post.id)}
                           className="flex items-center gap-2 px-3 py-1 rounded border border-gray-600 text-gray-400 hover:border-pink-300 hover:text-pink-300 transition-all"
                         >
-                          ❤️ {(post.likes?.length || 0) + (likedPosts[post.id] ? 1 : 0)}
+                          ❤️ {(post.likes?.length || 0)}
                         </button>
                       ) : (
                         <span className="flex items-center gap-2 text-gray-400">
