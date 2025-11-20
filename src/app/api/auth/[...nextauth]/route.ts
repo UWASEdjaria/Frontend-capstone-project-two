@@ -1,12 +1,12 @@
 
 // the brain of  entire authentication system
 
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const handler = NextAuth({
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -16,7 +16,7 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         console.log("Authorize called with:", { email: credentials?.email });
-        
+
         if (!credentials?.email || !credentials?.password) {
           console.log("Missing credentials");
           return null;
@@ -37,7 +37,7 @@ const handler = NextAuth({
           // Check password
           const isValidPassword = await bcrypt.compare(credentials.password, user.password);
           console.log("Password valid:", isValidPassword);
-          
+
           if (!isValidPassword) {
             return null;
           }
@@ -63,9 +63,11 @@ const handler = NextAuth({
 //jwt:Store everything inside the user’s browser token
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key",
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
   debug: true,
-});
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
