@@ -216,7 +216,7 @@ export default function PostsPage() {
     setPosts(data);
   };
   
-  if (loading) return <div className="max-w-4xl mx-auto mt-10">Loading...</div>;
+  if (loading) return <div className="max-w-4xl mx-auto mt-10 text-white">Loading...</div>;
   
   return (
     <div className="min-h-screen" style={{
