@@ -1,7 +1,9 @@
 import prisma from '../src/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 async function main() {
-  // Create a default user
+  // Create a default user with hashed password
+  const hashedPassword = await bcrypt.hash('password123', 10);
   const user = await prisma.user.upsert({
     where: { email: 'demo@example.com' },
     update: {},
@@ -9,7 +11,7 @@ async function main() {
       id: '1',
       name: 'Demo User',
       email: 'demo@example.com',
-      password: 'password123',
+      password: hashedPassword,
     },
   })
 
