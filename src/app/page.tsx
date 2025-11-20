@@ -100,7 +100,7 @@ export default function Home() {
                       <Link href={`/lab4/posts/${post.id}`} className="text-2xl font-bold text-white hover:text-gray-300 transition-colors">
                         {post.title}
                       </Link>
-                      <div className="flex items-center mt-2 text-gray-400">
+                      <div className="flex items-center mt-2 text-white">
                         <span>By {post.author?.name || 'Demo User'}</span>
                         <span className="mx-2">•</span>
                         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
@@ -127,19 +127,19 @@ export default function Home() {
                       {session ? (
                         <button 
                           onClick={() => toggleLike(post.id)}
-                          className="flex items-center gap-2 px-3 py-1 rounded border border-gray-600 text-gray-400 hover:border-pink-300 hover:text-pink-300 transition-all"
+                          className="flex items-center gap-2 px-3 py-1 rounded border border-gray-600 text-white hover:border-pink-300 hover:text-pink-300 transition-all"
                         >
                           ❤️ {(post.likes?.length || 0)}
                         </button>
                       ) : (
-                        <span className="flex items-center gap-2 text-gray-400">
+                        <span className="flex items-center gap-2 text-white">
                           ❤️ {post.likes?.length || 0}
                         </span>
                       )}
-                      <span className="flex items-center gap-2 text-gray-400">
+                      <span className="flex items-center gap-2 text-white">
                         💬 {post.comments?.length || 0}
                       </span>
-                      <span className="flex items-center gap-2 text-gray-400">
+                      <span className="flex items-center gap-2 text-white">
                         👥 {post.followers?.length || 0} followers
                       </span>
                     </div>
@@ -170,17 +170,17 @@ export default function Home() {
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="p-6 border border-white rounded transition-all duration-300 hover:shadow-lg hover:scale-105">
             <h3 className="text-xl font-bold text-white mb-3">✍️ Write</h3>
-            <p className="text-gray-400">Share your thoughts with rich text formatting and images</p>
+            <p className="text-white">Share your thoughts with rich text formatting and images</p>
           </div>
           
           <div className="p-6 border border-white rounded transition-all duration-300 hover:shadow-lg hover:scale-105">
             <h3 className="text-xl font-bold text-white  mb-3">💬 Engage</h3>
-            <p className="text-gray-400">Comment and like posts from other writers</p>
+            <p className="text-white">Comment and like posts from other writers</p>
           </div>
           
           <div className="p-6 border border-white rounded transition-all duration-300 hover:shadow-lg hover:scale-105">
             <h3 className="text-xl font-bold text-white mb-3">🔍 Discover</h3>
-            <p className="text-gray-400">Find interesting content through search and feeds</p>
+            <p className="text-white">Find interesting content through search and feeds</p>
           </div>
         </div>
 
@@ -192,7 +192,7 @@ export default function Home() {
               className="block p-6 border border-white rounded transition-all duration-300 hover:bg-black hover:scale-105 group"
             >
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-white">New to Medium?</h3>
-              <p className="text-gray-400 group-hover:text-white">Sign up to start writing and engaging with the community</p>
+              <p className="text-white group-hover:text-white">Sign up to start writing and engaging with the community</p>
             </Link>
             
             <Link 
@@ -200,7 +200,7 @@ export default function Home() {
               className="block p-6 border border-white rounded transition-all duration-300 hover:bg-black hover:scale-105 group"
             >
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-white">Already have an account?</h3>
-              <p className="text-gray-400 group-hover:text-white">Log in to continue your writing journey</p>
+              <p className="text-white group-hover:text-white">Log in to continue your writing journey</p>
             </Link>
           </div>
         </div>
