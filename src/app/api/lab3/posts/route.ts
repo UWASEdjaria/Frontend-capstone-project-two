@@ -13,8 +13,8 @@ export async function POST(request: Request) {
       content,
       slug,//Converts the post title to a URL-friendly string
       excerpt,
-      authorId: "1",
-    },
+      authorId: session.user.id,
+    },// Connect the post to the author using their user ID
   });
   
   return NextResponse.json(post);
