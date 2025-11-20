@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
@@ -14,16 +15,13 @@ function EditorContent() {
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [isClient, setIsClient] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  // Removed isClient state as dynamic import handles SSR
+  const isEditing = !!editId;
   const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
-    setIsClient(true);
-    
     // Load post for editing if editId is provided
     if (editId) {
-      setIsEditing(true);
       fetch(`/api/lab4/post/${editId}`)
         .then(r => r.json())
         .then(data => {
@@ -98,7 +96,8 @@ function EditorContent() {
       } else {
         alert(isEditing ? "Failed to update" : "Failed to publish");
       }
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       alert(isEditing ? "Error updating" : "Error publishing");
     }
   };
@@ -126,6 +125,7 @@ function EditorContent() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none"
+              aria-label="Choose category"
             >
               <option value="">Choose category</option>
               {categories.map((cat: string) => (
@@ -140,22 +140,21 @@ function EditorContent() {
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none"
+                aria-label="Upload Image (optional)"
               />
               {imageUrl && (
                 <div className="mt-4">
-                  <img src={imageUrl} alt="Preview" className="max-w-xs h-auto rounded-lg border-2 border-gray-300" />
+                  <Image src={imageUrl} alt="Preview" width={200} height={200} className="max-w-xs h-auto rounded-lg border-2 border-gray-300" />
                 </div>
               )}
             </div>
             
             <div className="min-h-[400px] border-2 border-gray-300 rounded-lg">
-              {isClient && (
-                <JoditEditor
-                  value={content}
-                  config={config}
-                  onBlur={(newContent: string) => setContent(newContent)}
-                />
-              )}
+              <JoditEditor
+                value={content}
+                config={config}
+                onBlur={(newContent: string) => setContent(newContent)}
+              />
             </div>
             
             <div className="text-center">
