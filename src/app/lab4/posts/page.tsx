@@ -48,21 +48,17 @@ export default function PostsPage() {
 
   // Filter posts based on search and category
   useEffect(() => {
-    let filtered = allPosts;
-    
-    if (searchTerm) {
-      filtered = filtered.filter(post => 
+    const filtered = allPosts.filter(post => {
+      const matchesSearch = !searchTerm ||
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    if (selectedCategory) {
-      filtered = filtered.filter(post => 
-        post.tags?.some((tag: any) => tag.name === selectedCategory)
-      );
-    }
-    
+        post.content.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesCategory = !selectedCategory ||
+        post.tags?.some((tag: any) => tag.name === selectedCategory);
+
+      return matchesSearch && matchesCategory;
+    });
+
     setPosts(filtered);
   }, [searchTerm, selectedCategory, allPosts]);
 
@@ -202,18 +198,28 @@ export default function PostsPage() {
   const addComment = async (postId: string) => {
     const content = newComment[postId];
     if (!content) return;
-    
-    await fetch("/api/lab6/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, postId, authorId: currentUser }),
-    });
-    
-    setNewComment({ ...newComment, [postId]: "" });
-    // Refresh posts
-    const res = await fetch("/api/lab4/post");
-    const data = await res.json();
-    setPosts(data);
+
+    try {
+      await fetch("/api/lab6/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, postId, authorId: currentUser }),
+      });
+
+      setNewComment({ ...newComment, [postId]: "" });
+
+      // Update comment count locally
+      const updatePosts = (postsList: any[]) => postsList.map(p =>
+        p.id === postId
+          ? { ...p, comments: [...(p.comments || []), { id: Date.now(), content, author: { name: session?.user?.name || 'You' } }] }
+          : p
+      );
+
+      setPosts(updatePosts(posts));
+      setAllPosts(updatePosts(allPosts));
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
   };
   
   if (loading) return <div className="max-w-4xl mx-auto mt-10 text-white">Loading...</div>;
@@ -263,7 +269,7 @@ export default function PostsPage() {
       </div>
       
       {posts.length === 0 && !loading ? (
-        <p className="text-black">No posts yet. <Link href="/lab3/editor" className="text-black hover:underline">Create one!</Link></p>
+        <p className="text-black">No posts yet. <Link href="/lab3/editor" className="text-black hover:underline" onClick={(e) => { if (!session) { e.preventDefault(); router.push('/lab2/login'); } }}>Create one!</Link></p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map(p => (

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+odimport Link from 'next/link';
 
 export default function Lab3() {
   return (
