@@ -26,6 +26,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Test auth error:", error);
-    return NextResponse.json({ error: "Server error", details: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Server error", details: error instanceof Error ? error.message : "Unknown error" }, { status: 500 });
   }
 }
