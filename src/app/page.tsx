@@ -122,11 +122,7 @@ export default function Home() {
                       {session ? (
                         <button 
                           onClick={() => toggleLike(post.id)}
-                          className={`flex items-center gap-2 px-3 py-1 rounded transition-all ${
-                            likedPosts[post.id] 
-                              ? 'bg-red-500 text-white' 
-                              : 'border border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-500'
-                          }`}
+                          className="flex items-center gap-2 px-3 py-1 rounded border border-gray-600 text-gray-400 hover:border-pink-300 hover:text-pink-300 transition-all"
                         >
                           ❤️ {(post.likes?.length || 0) + (likedPosts[post.id] ? 1 : 0)}
                         </button>
