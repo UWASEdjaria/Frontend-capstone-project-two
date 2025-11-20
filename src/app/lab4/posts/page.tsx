@@ -158,7 +158,7 @@ export default function PostsPage() {
             ...p,
             followers: isFollowing
               ? p.followers.filter((f: any) => f.id !== currentUser)
-              : [...(p.followers || []), { id: currentUser }]
+              : p.followers.some((f: any) => f.id === currentUser) ? p.followers : [...(p.followers || []), { id: currentUser }]
           }
         : p
     );
@@ -180,17 +180,17 @@ export default function PostsPage() {
       [postId]: !isFollowing
     });
     
-    const updatePosts = (postsList: any[]) => postsList.map(p => 
-      p.id === postId 
-        ? { 
-            ...p, 
-            postFollowers: isFollowing 
+    const updatePosts = (postsList: any[]) => postsList.map(p =>
+      p.id === postId
+        ? {
+            ...p,
+            postFollowers: isFollowing
               ? p.postFollowers.filter((f: any) => f.id !== currentUser)
-              : [...(p.postFollowers || []), { id: currentUser }]
+              : p.postFollowers.some((f: any) => f.id === currentUser) ? p.postFollowers : [...(p.postFollowers || []), { id: currentUser }]
           }
         : p
     );
-    
+
     setPosts(updatePosts(posts));
     setAllPosts(updatePosts(allPosts));
   };
@@ -295,7 +295,7 @@ export default function PostsPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between mt-2">
+on writing without login            <div className="flex items-center justify-between mt-2">
               <div>
                 <p className="text-black">By {p.author?.name || 'Unknown'}</p>
                 <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
