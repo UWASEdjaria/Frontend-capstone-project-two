@@ -1,3 +1,6 @@
+
+// the brain of  entire authentication system
+
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
@@ -51,9 +54,13 @@ const handler = NextAuth({
       },
     }),
   ],
+//When a user is NOT logged in and tries to visit a protected page,
+//redirect them to /lab2/login.
   pages: {
     signIn: "/lab2/login",
   },
+//To make sure tokens can’t be forged or read by attackers.
+//jwt:Store everything inside the user’s browser token
   secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key",
   session: {
     strategy: "jwt",
