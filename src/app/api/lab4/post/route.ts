@@ -1,88 +1,94 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export async function POST(request: Request) {
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-');
+}
+
+export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { title, content, tags, imageUrl } = await request.json();
-    
-    // Generate slug from title
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
-    // Generate excerpt from content
-    const excerpt = content.replace(/<[^>]*>/g, '').substring(0, 150) + '...';
-    
+
+    if (!title || !content || !tags || tags.length === 0) {
+      return NextResponse.json({ error: "Title, content, and tags are required" }, { status: 400 });
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Create tags if they don't exist
+    const tagPromises = tags.map(async (tagName: string) => {
+      return await prisma.tag.upsert({
+        where: { name: tagName },
+        update: {},
+        create: { name: tagName }
+      });
+    });
+
+    const tagRecords = await Promise.all(tagPromises);
+
+    // Create post
     const post = await prisma.post.create({
       data: {
         title,
-        slug,
+        slug: slugify(title),
         content,
-        excerpt,
+        excerpt: content.substring(0, 150) + (content.length > 150 ? '...' : ''),
         imageUrl: imageUrl || null,
         published: true,
         publishedAt: new Date(),
-        authorId: "1",
-        tags: tags ? {
-          connectOrCreate: tags.map((tagName: string) => ({
-            where: { name: tagName },
-            create: { name: tagName }
-          }))
-        } : undefined
+        authorId: user.id,
+        tags: {
+          connect: tagRecords.map(tag => ({ id: tag.id }))
+        }
       },
       include: {
         author: true,
         tags: true
-      },
+      }
     });
-    
-    return NextResponse.json(post);
+
+    return NextResponse.json(post, { status: 201 });
   } catch (error) {
     console.error("Error creating post:", error);
-    return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const posts = await prisma.post.findMany({
       include: {
         author: true,
         tags: true,
-        comments: {
-          include: { author: true }
-        },
+        _count: {
+          select: { likes: true, comments: true }
+        }
       },
       orderBy: {
-        createdAt: 'desc',
-      },
-    });
-    
-    const postsWithCounts = await Promise.all(posts.map(async (post) => {
-      try {
-        const numericPostId = parseInt(post.id.replace(/\D/g, '')) || 1;
-        const allLikes = await prisma.likeLab8.findMany({
-          where: { postId: numericPostId }
-        });
-        
-        const likes = allLikes.filter(like => like.userId > 0);
-        const dislikes = allLikes.filter(like => like.userId < 0);
-        
-        return {
-          ...post,
-          likes,
-          dislikes
-        };
-      } catch (error) {
-        return {
-          ...post,
-          likes: [],
-          dislikes: []
-        };
+        createdAt: 'desc'
       }
-    }));
-    
-    return NextResponse.json(postsWithCounts);
+    });
+
+    return NextResponse.json(posts);
   } catch (error) {
     console.error("Error fetching posts:", error);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
