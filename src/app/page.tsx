@@ -1,6 +1,19 @@
+"use client";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const handleStartWriting = () => {
+    if (!session) {
+      router.push('/lab2/login');
+    } else {
+      router.push('/lab3/editor');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900">
