@@ -84,7 +84,8 @@ function EditorContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
-          content: content.trim()
+          content: content.trim(),
+          imageUrl: imageUrl.trim()
         })
       });
 
@@ -115,7 +116,8 @@ function EditorContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
-          content: content.trim()
+          content: content.trim(),
+          imageUrl: imageUrl.trim()
         })
       });
 
