@@ -1,62 +1,32 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import { CATEGORIES, BG_STYLE, apiCall, uploadImage } from "@/lib/utils";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 
-function EditorContent() {
+type Draft = { id: number; title: string; content: string; category: string; date: string };
+
+export default function Editor() {
   const { data: session } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const editId = searchParams.get('edit');
-  const [content, setContent] = useState("");
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  // Removed isClient state as dynamic import handles SSR
-  const isEditing = !!editId;
-  const [imageUrl, setImageUrl] = useState("");
+  const [form, setForm] = useState({ title: "", content: "", category: "", imageUrl: "" });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    // Load post for editing if editId is provided
-    if (editId) {
-      fetch(`/api/lab3/posts/${editId}`)
-        .then(r => r.json()) //Converts the response (r) from the backend into a JavaScript object.
-        .then(data => {
-          setTitle(data.title);
-          setContent(data.content);
-          setCategory(data.tags?.[0]?.name || "");
-          setImageUrl(data.imageUrl || "");
-        })
-        .catch(err => console.error('Error loading post:', err));
-    }
-  }, [editId]);//The code inside useEffect runs only when editId changes.
-
-  const categories = ["Technology", "Writing", "Business", "Lifestyle"];
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageUrl(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  useEffect(() => setIsClient(true), []);
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg border-2 border-gray-300 p-8">
+      <div className="min-h-screen flex items-center justify-center p-4" style={BG_STYLE}>
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-2 border-gray-300 p-8">
           <h2 className="text-2xl font-bold mb-4 text-black text-center">Please Login</h2>
           <p className="mb-6 text-gray-600 text-center">You need to login to write posts.</p>
-          <button 
-            onClick={() => router.push('/lab2/login')} 
-            className="w-full border-2 border-black px-4 py-3 rounded-lg hover:bg-black hover:text-white text-black font-medium transition-all"
-          >
+          <button onClick={() => router.push('/lab2/login')} className="w-full border-2 border-black px-4 py-3 rounded-lg hover:bg-black hover:text-white text-black font-medium transition-all">
             Login
           </button>
         </div>
@@ -64,155 +34,102 @@ function EditorContent() {
     );
   }
 
-  const config = {
-    placeholder: "Write your story...",
-    buttons: ["bold", "italic", "ul", "ol", "link"]
+  const saveDraft = () => {
+    if (!form.title && !form.content) return alert("Nothing to save!");
+    setDrafts([{ id: Date.now(), ...form, title: form.title || "Untitled", date: new Date().toLocaleDateString() }, ...drafts]);
+    alert("Draft saved!");
   };
 
-  const saveAsDraft = async () => {
-    if (!title || !content) {
-      alert("Please fill title and content!");
-      return;
-    }
-
-    try {
-      const url = isEditing ? `/api/lab3/posts/${editId}` : "/api/lab3/posts";
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          content: content.trim(),
-          imageUrl: imageUrl.trim()
-        })
-      });
-
-      if (response.ok) {
-        alert("Draft saved!");
-        router.push("/lab3");
-      } else {
-        alert("Failed to save draft");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error saving draft");
-    }
-  };
+  const loadDraft = (draft: Draft) => setForm({ title: draft.title, content: draft.content, category: draft.category, imageUrl: "" });
+  const deleteDraft = (id: number) => setDrafts(drafts.filter(d => d.id !== id));
 
   const publishPost = async () => {
-    if (!title || !content) {
-      alert("Please fill title and content!");
-      return;
-    }
-
+    if (!form.title || !form.content) return alert("Please fill title and content!");
+    setUploading(true);
     try {
-      const url = isEditing ? `/api/lab3/posts/${editId}` : "/api/lab3/posts";
-      const method = isEditing ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
+      const imageUrl = imageFile ? await uploadImage(imageFile) : form.imageUrl;
+      if (imageFile && !imageUrl) return setUploading(false);
+      
+      const result = await apiCall("/api/lab4/post", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          content: content.trim(),
-          imageUrl: imageUrl.trim()
-        })
+        body: JSON.stringify({ ...form, tags: form.category ? [form.category] : [], imageUrl })
       });
-
-      if (response.ok) {
-        alert(isEditing ? "Post updated!" : "Post published!");
-        router.push("/lab3");
+      
+      if (result.ok) {
+        alert("Post published!");
+        setForm({ title: "", content: "", category: "", imageUrl: "" });
+        setImageFile(null);
+        router.push("/lab4/posts");
       } else {
-        alert(isEditing ? "Failed to update" : "Failed to publish");
+        alert("Failed to publish: " + result.data);
       }
-    } catch (err) {
-      console.error(err);
-      alert(isEditing ? "Error updating" : "Error publishing");
+    } catch (error) {
+      alert("Error publishing: " + error);
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <div className="min-h-screen py-8" style={{
-      backgroundImage: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
-    }}>
+    <div className="min-h-screen py-8" style={BG_STYLE}>
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white/50 backdrop-blur-sm rounded-lg shadow-xl border-2 border-gray-300 p-6 md:p-8">
-          <h1 className="text-3xl font-bold mb-8 text-black text-center">{isEditing ? 'Edit Story' : 'Write a Story'}</h1>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-2 border-gray-300 p-6 md:p-8">
+          <h1 className="text-3xl font-bold mb-8 text-black text-center">Write a Story</h1>
           
           <div className="space-y-6">
-            <input
-              placeholder="Story title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg text-black bg-white focus:border-blue-500 focus:outline-none"
-            />
+            <input placeholder="Story title..." value={form.title} onChange={(e) => setForm({...form, title: e.target.value})}
+              className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg text-black bg-white focus:border-blue-500 focus:outline-none" />
             
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none"
-              aria-label="Choose category"
-            >
-              <option value="">Choose category</option>
-              {categories.map((cat: string) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+            <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}
+              className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none">
+              <option value="">Choose category (optional)</option>
+              {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
             
-            <div>
-              <label className="block text-black font-medium mb-2">Upload Image (optional)</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none"
-                aria-label="Upload Image (optional)"
-              />
-              {imageUrl && (
-                <div className="mt-4">
-                  <Image src={imageUrl} alt="Preview" width={200} height={200} className="max-w-xs h-auto rounded-lg border-2 border-gray-300" />
-                </div>
-              )}
+            <div className="space-y-4">
+              <input placeholder="Image URL (optional)..." value={form.imageUrl} onChange={(e) => setForm({...form, imageUrl: e.target.value})}
+                className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none" />
+              <div className="text-center text-gray-500">OR</div>
+              <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setImageFile(file); setForm({...form, imageUrl: ""}); }}}
+                className="w-full p-4 border-2 border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none" />
+              {imageFile && <p className="text-sm text-green-600">Selected: {imageFile.name}</p>}
             </div>
             
             <div className="min-h-[400px] border-2 border-gray-300 rounded-lg">
-              <JoditEditor
-                value={content}
-                config={config}
-                onBlur={(newContent: string) => setContent(newContent)}
-              />
+              {isClient && <JoditEditor value={form.content} config={{ placeholder: "Write your story...", buttons: ["bold", "italic", "ul", "ol", "link"], showCharsCounter: false, showWordsCounter: false, showXPathInStatusbar: false }}
+                onBlur={(content: string) => setForm({...form, content})} />}
             </div>
             
-            <div className="text-center space-x-4">
-              <button
-                onClick={saveAsDraft}
-                className="px-8 py-4 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white font-medium text-lg transition-colors"
-              >
-                Save as Draft
-              </button>
-              <button
-                onClick={publishPost}
-                className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-800 font-medium text-lg transition-colors"
-              >
-{isEditing ? 'Update Story' : 'Publish Story'}
+            <div className="flex gap-4 justify-center">
+              <button onClick={saveDraft} className="px-6 py-3 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors">Save Draft</button>
+              <button onClick={publishPost} disabled={uploading} className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-800 font-medium text-lg transition-colors disabled:bg-gray-400">
+                {uploading ? "Uploading..." : "Publish Story"}
               </button>
             </div>
           </div>
         </div>
+        
+        {drafts.length > 0 && (
+          <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-2 border-gray-300 p-6">
+            <h2 className="text-xl font-bold mb-4 text-black">Saved Drafts</h2>
+            <div className="space-y-3">
+              {drafts.map(draft => (
+                <div key={draft.id} className="flex items-center justify-between p-3 border border-gray-300 rounded">
+                  <div>
+                    <p className="font-medium text-black">{draft.title}</p>
+                    <p className="text-sm text-gray-600">{draft.date}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => loadDraft(draft)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Load</button>
+                    <button onClick={() => deleteDraft(draft.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-export default function Editor() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <EditorContent />
-    </Suspense>
   );
 }

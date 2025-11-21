@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
 
     const { title, content, tags, imageUrl } = await request.json();
 
-    if (!title || !content || !tags || tags.length === 0) {
-      return NextResponse.json({ error: "Title, content, and tags are required" }, { status: 400 });
+    if (!title || !content) {
+      return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
     }
 
     // Find user
@@ -32,16 +32,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Create tags if they don't exist
-    const tagPromises = tags.map(async (tagName: string) => {
-      return await prisma.tag.upsert({
-        where: { name: tagName },
-        update: {},
-        create: { name: tagName }
+    // Create tags if they exist
+    let tagRecords: any[] = [];
+    if (tags && tags.length > 0) {
+      const tagPromises = tags.map(async (tagName: string) => {
+        return await prisma.tag.upsert({
+          where: { name: tagName },
+          update: {},
+          create: { name: tagName }
+        });
       });
-    });
-
-    const tagRecords = await Promise.all(tagPromises);
+      tagRecords = await Promise.all(tagPromises);
+    }
 
     // Create post
     const post = await prisma.post.create({
@@ -54,9 +56,9 @@ export async function POST(request: NextRequest) {
         published: true,
         publishedAt: new Date(),
         authorId: user.id,
-        tags: {
+        tags: tagRecords.length > 0 ? {
           connect: tagRecords.map(tag => ({ id: tag.id }))
-        }
+        } : undefined
       },
       include: {
         author: true,
@@ -71,12 +73,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const posts = await prisma.post.findMany({
       include: {
-        author: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
         tags: true,
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        likes: true,
         _count: {
           select: { likes: true, comments: true }
         }

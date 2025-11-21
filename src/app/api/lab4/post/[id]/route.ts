@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         likes,
         dislikes
       });
-    } catch (error) {
+    } catch {
       return NextResponse.json({
         ...post,
         likes: [],

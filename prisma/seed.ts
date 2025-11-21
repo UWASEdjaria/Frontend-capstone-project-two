@@ -10,7 +10,7 @@ async function main() {
     update: {},
     create: {
       id: '1',
-      name: 'Demo User',
+      name: 'Admin',
       email: 'demo@example.com',
       password: hashedPassword,
     },

@@ -100,7 +100,7 @@ export default function PostDetail() {
               <h1 className="text-3xl font-bold text-black mb-2">{post.title}</h1>
               <p className="text-gray-600">By {post.author?.name || 'Unknown'} • {new Date(post.createdAt).toLocaleDateString()}</p>
             </div>
-           {session && post.authorId === session?.user?.id && (
+           {session && post.author?.email === session?.user?.email && (
 
               <div className="flex gap-2">
                 <Link

@@ -10,7 +10,6 @@ export default function PostsPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [posts, setPosts] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
@@ -21,7 +20,7 @@ export default function PostsPage() {
   const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
-  const currentUser = session?.user?.email || "1"; // Use session user email
+  const currentUser = session?.user?.id || session?.user?.email || "1";
   
   useEffect(() => {
     fetch("/api/lab4/post")
@@ -49,8 +48,8 @@ export default function PostsPage() {
   }, []);
 
   // Filter posts based on search and category
-  useEffect(() => {
-    const filtered = allPosts.filter(post => {
+  const filteredPosts = useMemo(() => {
+    return allPosts.filter(post => {
       const matchesSearch = !searchTerm ||
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase());
@@ -60,9 +59,11 @@ export default function PostsPage() {
 
       return matchesSearch && matchesCategory;
     });
-
-    setPosts(filtered);
   }, [searchTerm, selectedCategory, allPosts]);
+
+  useEffect(() => {
+    setPosts(filteredPosts);
+  }, [filteredPosts]);
 
   const toggleLike = (postId: string) => {
     if (!session) {
@@ -202,23 +203,28 @@ export default function PostsPage() {
     if (!content) return;
 
     try {
-      await fetch("/api/lab6/comments", {
+      const response = await fetch("/api/lab6/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, postId, authorId: currentUser }),
       });
 
-      setNewComment({ ...newComment, [postId]: "" });
-
-      // Update comment count locally
-      const updatePosts = (postsList: any[]) => postsList.map(p =>
-        p.id === postId
-          ? { ...p, comments: [...(p.comments || []), { id: Date.now(), content, author: { name: session?.user?.name || 'You' } }] }
-          : p
-      );
-
-      setPosts(updatePosts(posts));
-      setAllPosts(updatePosts(allPosts));
+      if (response.ok) {
+        setNewComment({ ...newComment, [postId]: "" });
+        
+        // Refresh posts from server to get actual comments
+        const res = await fetch("/api/lab4/post");
+        const data = await res.json();
+        setAllPosts(data);
+        setPosts(data.filter((post: any) => {
+          const matchesSearch = !searchTerm ||
+            post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            post.content.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCategory = !selectedCategory ||
+            post.tags?.some((tag: any) => tag.name === selectedCategory);
+          return matchesSearch && matchesCategory;
+        }));
+      }
     } catch (error) {
       console.error("Error adding comment:", error);
     }
@@ -281,7 +287,7 @@ export default function PostsPage() {
               <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
                 {p.title}
               </Link>
-              {session && (p.authorId === currentUser || p.authorId === session?.user?.email) && (
+              {session && (p.author?.email === session?.user?.email || p.authorId === session?.user?.id) && (
                 <div className="flex gap-2 ml-2">
                   <Link 
                     href={`/lab3/editor?edit=${p.id}`}
@@ -303,7 +309,7 @@ export default function PostsPage() {
                 <p className="text-black">By {p.author?.name || 'Unknown'}</p>
                 <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
               </div>
-              {session && p.authorId !== currentUser && (
+              {session && p.author?.email !== session?.user?.email && (
                 <button
                   onClick={() => toggleFollow(p.id)}
                   className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
@@ -397,7 +403,7 @@ export default function PostsPage() {
             {p.comments && p.comments.length > 0 && (
               <div className="mt-4 space-y-2">
                 {p.comments.map((comment: any) => (
-                  <div key={comment.id} className="p-3 bg-gray-50 border border-black rounded">
+                  <div key={comment.id} className="p-3 bg-white/80 backdrop-blur-sm border-2 border-black rounded">
                     <p className="text-sm font-semibold text-black">{comment.author?.name || 'Unknown'}</p>
                     <p className="text-black">{comment.content}</p>
                   </div>

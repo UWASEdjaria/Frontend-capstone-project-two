@@ -23,6 +23,9 @@ export default function Header() {
           <Link href="/lab4/posts" className="text-black hover:text-gray-600 font-medium">
             Posts
           </Link>
+          <Link href="/lab5" className="text-black hover:text-gray-600 font-medium">
+            Feed
+          </Link>
 
           {/* Lab3 Dashboard visible only for logged-in users */}
           {session && (
