@@ -4,11 +4,17 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Post as PrismaPost, User } from '@/generated/prisma';
 
-type Post = PrismaPost & {
-  author: User | null;
-};
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  createdAt: string;
+  author: {
+    name: string | null;
+  } | null;
+}
 
 export default function PostDetail() {
   const { data: session } = useSession();
@@ -16,21 +22,6 @@ export default function PostDetail() {
   const params = useParams();
   const postId = params.id as string;
   const [post, setPost] = useState<Post | null>(null);
->>>>>>> Stashed changes
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/lab3/posts/${postId}`)
-      .then(r => r.json())
-      .then(data => {
-        setPost(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, [postId]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
