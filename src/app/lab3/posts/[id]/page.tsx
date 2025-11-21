@@ -5,23 +5,13 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  authorId: string;
-  createdAt: string;
-  author: {
-    name: string | null;
-  } | null;
-}
-
 export default function PostDetail() {
   const { data: session } = useSession();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
-  const [post, setPost] = useState<Post | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

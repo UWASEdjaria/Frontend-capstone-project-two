@@ -54,6 +54,20 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        (session.user as { id: string }).id = token.id as string;
+      }
+      return session;
+    },
+  },
 //When a user is NOT logged in and tries to visit a protected page,
 //redirect them to /lab2/login.
   pages: {
