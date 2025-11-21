@@ -23,8 +23,14 @@ export default function Header() {
           <Link href="/lab4/posts" className="text-black hover:text-gray-600 font-medium">
             Posts
           </Link>
-        
-          
+
+          {/* Lab3 Dashboard visible only for logged-in users */}
+          {session && (
+            <Link href="/lab3" className="text-black hover:text-gray-600 font-medium">
+            post details
+            </Link>
+          )}
+
           <div className="flex items-center gap-4">
             {!session ? (
               <>
