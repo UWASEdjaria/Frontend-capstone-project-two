@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Post as PrismaPost, User } from '@/generated/prisma';
+
+type Post = PrismaPost & {
+  author: User | null;
+};
 
 export default function Lab3() {
   const { data: session } = useSession();
@@ -107,11 +112,6 @@ export default function Lab3() {
                   </div>
                   <p className="text-white">By {p.author?.name || 'Unknown'}</p>
                   <p className="text-sm text-gray-400">{new Date(p.createdAt).toLocaleDateString()}</p>
-                </div>
-              ))}
-            </div>
-          )}
-                  <p className="text-sm text-gray-600">{new Date(p.createdAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
