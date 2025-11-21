@@ -10,7 +10,7 @@ type Post = PrismaPost & {
   author: User | null;
 };
 
-export default function Lab3() {
+export default function PostDetails() {
   const { data: session } = useSession();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -97,7 +97,7 @@ export default function Lab3() {
               {posts.map((p) => (
                 <div
                   key={p.id}
-                  className="p-6 border-2 border-white rounded bg-gray-600/80 backdrop-blur-sm h-fit shadow-lg"
+                  className="p-6 border border-white rounded bg-gray-600/80 backdrop-blur-sm h-fit shadow-lg"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <Link
@@ -107,21 +107,23 @@ export default function Lab3() {
                       {p.title}
                     </Link>
 
-                    {/* Edit & Delete Buttons Always Visible */}
-                    <div className="flex gap-2 ml-2">
-                      <Link
-                        href={`/lab3/editor?edit=${p.id}`}
-                        className="px-3 py-1 border border-white rounded hover:bg-white hover:text-gray-800 transition-all"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(p)}
-                        className="px-3 py-1 border border-white rounded hover:bg-white hover:text-gray-800 transition-all"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    {/* Edit & Delete Buttons visible only if logged in */}
+                    {session && (
+                      <div className="flex gap-2 ml-2">
+                        <Link
+                          href={`/lab3/editor?edit=${p.id}`}
+                          className="px-3 text-white py-1 border border-white rounded hover:bg-black hover:text-gray transition-all"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(p)}
+                          className="px-3 text-white py-1 border border-white rounded hover:bg-black hover:text-gray  transition-all"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-white">By {p.author?.name || "Unknown"}</p>
