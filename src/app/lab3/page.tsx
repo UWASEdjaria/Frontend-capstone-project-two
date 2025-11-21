@@ -1,4 +1,4 @@
- dev"use client";
+"use client";
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -107,6 +107,11 @@ export default function Lab3() {
                   </div>
                   <p className="text-white">By {p.author?.name || 'Unknown'}</p>
                   <p className="text-sm text-gray-400">{new Date(p.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+                  <p className="text-sm text-gray-600">{new Date(p.createdAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
