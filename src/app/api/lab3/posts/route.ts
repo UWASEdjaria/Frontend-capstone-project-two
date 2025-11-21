@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+//post:This part creates a new post.
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-
+//Fetch all posts from the database
 export async function GET() {
   const posts = await prisma.post.findMany({
     include: {
@@ -68,6 +69,7 @@ export async function GET() {
 
   return NextResponse.json(posts);
 }
+//This part updates a post
 
 export async function PUT(request: NextRequest) {
   try {
