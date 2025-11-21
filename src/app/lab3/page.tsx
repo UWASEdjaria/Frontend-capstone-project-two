@@ -1,4 +1,4 @@
-"use client";
+ dev"use client";
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -49,69 +49,64 @@ export default function Lab3() {
   };
 
   return (
-    <div className="min-h-screen py-8" style={{
-      backgroundImage: 'url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
-    }}>
+    <div className="min-h-screen py-8 bg-gray-800">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="bg-white/70 backdrop-blur-sm rounded-lg shadow-xl border-2 border-gray-300 p-6 md:p-8 mb-6">
-          <h1 className="text-3xl font-bold mb-8 text-black text-center">Rich Content Editor</h1>
+        <div className="bg-gray-700/80 backdrop-blur-sm rounded-lg shadow-xl border-2 border-gray-600 p-6 md:p-8 mb-6">
+          <h1 className="text-3xl font-bold mb-8 text-white text-center">Rich Content Editor</h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link
               href="/lab3/editor"
-              className="block p-6 bg-white/80 border-2 border-gray-300 rounded-lg hover:bg-white transition-all shadow-lg"
+              className="block p-6 bg-gray-600/80 border-2 border-gray-500 rounded-lg hover:bg-gray-600 transition-all shadow-lg"
             >
-              <h2 className="text-xl font-semibold text-black mb-2">Rich Text Editor</h2>
-              <p className="text-gray-700">Create posts with rich formatting, images, and embeds</p>
+              <h2 className="text-xl font-semibold text-white mb-2">Rich Text Editor</h2>
+              <p className="text-gray-300">Create posts with rich formatting, images, and embeds</p>
             </Link>
 
             <Link
               href="/lab4/posts"
-              className="block p-6 bg-white/80 border-2 border-gray-300 rounded-lg hover:bg-white transition-all shadow-lg"
+              className="block p-6 bg-gray-600/80 border-2 border-gray-500 rounded-lg hover:bg-gray-600 transition-all shadow-lg"
             >
-              <h2 className="text-xl font-semibold text-black mb-2">View Posts</h2>
-              <p className="text-gray-700">Browse all published posts</p>
+              <h2 className="text-xl font-semibold text-white mb-2">View Posts</h2>
+              <p className="text-gray-300">Browse all published posts</p>
             </Link>
           </div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-sm rounded-lg shadow-xl border-2 border-gray-300 p-6 md:p-8">
-          <h2 className="text-2xl font-bold mb-6 text-black">Your Posts</h2>
+        <div className="bg-gray-700/80 backdrop-blur-sm rounded-lg shadow-xl border-2 border-gray-600 p-6 md:p-8">
+          <h2 className="text-2xl font-bold mb-6 text-white">Your Posts</h2>
 
           {loading ? (
-            <p className="text-black">Loading...</p>
+            <p className="text-white">Loading...</p>
           ) : posts.length === 0 ? (
-            <p className="text-black">No posts yet. <Link href="/lab3/editor" className="text-black hover:underline">Create one!</Link></p>
+            <p className="text-white">No posts yet. <Link href="/lab3/editor" className="text-white hover:underline">Create one!</Link></p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {posts.map(p => (
-                <div key={p.id} className="p-6 border-2 border-black rounded bg-white/80 backdrop-blur-sm h-fit shadow-lg">
+                <div key={p.id} className="p-6 border-2 border-white rounded bg-gray-600/80 backdrop-blur-sm h-fit shadow-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <Link href={`/lab3/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
+                    <Link href={`/lab3/posts/${p.id}`} className="text-xl font-bold text-white hover:underline flex-1">
                       {p.title}
                     </Link>
                     {session && p.authorId === session?.user?.email && (
                       <div className="flex gap-2 ml-2">
                         <Link
                           href={`/lab3/editor?edit=${p.id}`}
-                          className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all"
+                          className="px-3 py-1 border border-white rounded hover:bg-white hover:text-gray-800 transition-all"
                         >
                           Edit
                         </Link>
                         <button
                           onClick={() => deletePost(p.id)}
-                          className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all"
+                          className="px-3 py-1 border border-white rounded hover:bg-white hover:text-gray-800 transition-all"
                         >
                           Delete
                         </button>
                       </div>
                     )}
                   </div>
-                  <p className="text-black">By {p.author?.name || 'Unknown'}</p>
-                  <p className="text-sm text-gray-600">{new Date(p.createdAt).toLocaleDateString()}</p>
+                  <p className="text-white">By {p.author?.name || 'Unknown'}</p>
+                  <p className="text-sm text-gray-400">{new Date(p.createdAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
