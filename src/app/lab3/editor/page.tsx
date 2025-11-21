@@ -23,7 +23,7 @@ function EditorContent() {
     // Load post for editing if editId is provided
     if (editId) {
       fetch(`/api/lab3/posts/${editId}`)
-        .then(r => r.json())
+        .then(r => r.json()) //Converts the response (r) from the backend into a JavaScript object.
         .then(data => {
           setTitle(data.title);
           setContent(data.content);
@@ -32,7 +32,7 @@ function EditorContent() {
         })
         .catch(err => console.error('Error loading post:', err));
     }
-  }, [editId]);
+  }, [editId]);//The code inside useEffect runs only when editId changes.
 
   const categories = ["Technology", "Writing", "Business", "Lifestyle"];
 
