@@ -23,6 +23,9 @@ export const authOptions: AuthOptions = {
         }
 
         try {
+          // Test database connection
+          await prisma.$connect();
+          
           // Find user in database
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
