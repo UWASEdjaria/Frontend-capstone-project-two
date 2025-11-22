@@ -20,6 +20,7 @@ export default function PostsPage() {
   const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
+  const [submittingComment, setSubmittingComment] = useState<{[key: string]: boolean}>({});
   const currentUser = session?.user?.email || "1";
   
   useEffect(() => {
@@ -200,8 +201,10 @@ export default function PostsPage() {
 
   const addComment = async (postId: string) => {
     const content = newComment[postId];
-    if (!content) return;
+    if (!content || submittingComment[postId]) return;
 
+    setSubmittingComment({ ...submittingComment, [postId]: true });
+    
     try {
       const response = await fetch("/api/lab6/comments", {
         method: "POST",
@@ -227,6 +230,8 @@ export default function PostsPage() {
       }
     } catch (error) {
       console.error("Error adding comment:", error);
+    } finally {
+      setSubmittingComment({ ...submittingComment, [postId]: false });
     }
   };
   
@@ -385,9 +390,10 @@ export default function PostsPage() {
                   />
                   <button
                     onClick={() => addComment(p.id)}
-                    className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all"
+                    disabled={submittingComment[p.id]}
+                    className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all disabled:bg-gray-400"
                   >
-                    Post
+                    {submittingComment[p.id] ? 'Posting...' : 'Post'}
                   </button>
                 </div>
               </div>
