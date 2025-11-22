@@ -20,7 +20,7 @@ export default function PostsPage() {
   const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
-  const currentUser = session?.user?.id || session?.user?.email || "1";
+  const currentUser = session?.user?.email || "1";
   
   useEffect(() => {
     fetch("/api/lab4/post")
@@ -287,7 +287,7 @@ export default function PostsPage() {
               <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
                 {p.title}
               </Link>
-              {session && (p.author?.email === session?.user?.email || p.authorId === session?.user?.id) && (
+              {session && p.author?.email === session?.user?.email && (
                 <div className="flex gap-2 ml-2">
                   <Link 
                     href={`/lab3/editor?edit=${p.id}`}
