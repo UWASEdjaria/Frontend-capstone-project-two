@@ -1,21 +1,44 @@
 import { NextResponse } from "next/server";
-import prisma from "../../../../../lib/prisma";
+import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
     const { content, postId, authorId } = await request.json();
+    console.log('Creating comment:', { content, postId, authorId });
+    
+    // Find or create user by email
+    let user = await prisma.user.findUnique({
+      where: { email: authorId }
+    });
+    
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: authorId,
+          name: authorId.split('@')[0],
+          password: ''
+        }
+      });
+    }
     
     const comment = await prisma.comment.create({
       data: {
         content,
         postId,
-        authorId,
+        authorId: user.id,
       },
       include: {
-        author: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
       },
     });
     
+    console.log('Created comment:', comment);
     return NextResponse.json(comment);
   } catch (error) {
     console.error("Error creating comment:", error);

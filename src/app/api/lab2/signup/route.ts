@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "../../../../../lib/prisma";
 import bcrypt from "bcryptjs";
 
+//A library for hashing passwords so we don't store plain passwords in the database.
 export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();

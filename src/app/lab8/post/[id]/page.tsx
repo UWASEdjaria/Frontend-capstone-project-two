@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function PostLike({ params }: any) {
+export default function PostLike({ params }: { params: { id: string } }) {
   const postId = Number(params.id);
   const userId = 1; // TEMP fake user — replace with real auth later
 
@@ -23,6 +23,7 @@ export default function PostLike({ params }: any) {
     loadLikes();
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadLikes();
   }, []);

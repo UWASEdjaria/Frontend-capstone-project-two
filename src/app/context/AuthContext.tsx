@@ -2,23 +2,34 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext<{
+  token: string | null;
+  login: (t: string) => void;
+  logout: () => void;
+} | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("token");
-    if (saved) setToken(saved);
+    // Only access localStorage on the client side
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem("token");
+      setToken(storedToken);
+    }
   }, []);
 
   const login = (t: string) => {
-    localStorage.setItem("token", t);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("token", t);
+    }
     setToken(t);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("token");
+    }
     setToken(null);
   };
 

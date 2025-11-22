@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
   const comments = await prisma.comment.findMany({
-    where: { postId: parseInt(params.id) },
+    where: { postId: id }, 
     include: {
       author: true,
     },
-    orderBy: {
-      createdAt: 'desc',
-    },
   });
-  
+
   return NextResponse.json(comments);
 }

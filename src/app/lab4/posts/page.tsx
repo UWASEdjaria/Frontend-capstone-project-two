@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -11,50 +12,79 @@ export default function PostsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
-  const currentUser = session?.user?.id || "1"; // Use session user ID
+  const [followedUsers, setFollowedUsers] = useState<{[key: string]: boolean}>({});
+  const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
+  const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
+  const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
+  const [submittingComment, setSubmittingComment] = useState<{[key: string]: boolean}>({});
+  const currentUser = session?.user?.email || "1";
   
   useEffect(() => {
-    fetch("/api/lab4/post")
-      .then(r => r.json())
-      .then(data => {
-        setPosts(data);
-        setAllPosts(data);
-        // Extract unique categories from posts
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/lab4/post");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch posts: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Fetched posts:', data);
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid data format received');
+        }
+        
+        const postsWithCounts = data.map((post: any) => ({
+          ...post,
+          likes: post.likes || [],
+          dislikes: post.dislikes || [],
+          followers: post.followers || [],
+          postFollowers: post.postFollowers || []
+        }));
+        
+        setPosts(postsWithCounts);
+        setAllPosts(postsWithCounts);
+        
         const uniqueCategories = [...new Set(data.flatMap((post: any) => 
           post.tags?.map((tag: any) => tag.name) || []
-        ))];
+        ))] as string[];
         setCategories(uniqueCategories);
+      } catch (err) {
+        console.error('Error fetching posts:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load posts');
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      }
+    };
+    
+    fetchPosts();
   }, []);
 
   // Filter posts based on search and category
-  useEffect(() => {
-    let filtered = allPosts;
-    
-    if (searchTerm) {
-      filtered = filtered.filter(post => 
+  const filteredPosts = useMemo(() => {
+    return allPosts.filter(post => {
+      const matchesSearch = !searchTerm ||
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    if (selectedCategory) {
-      filtered = filtered.filter(post => 
-        post.tags?.some((tag: any) => tag.name === selectedCategory)
-      );
-    }
-    
-    setPosts(filtered);
+        post.content.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesCategory = !selectedCategory ||
+        post.tags?.some((tag: any) => tag.name === selectedCategory);
+
+      return matchesSearch && matchesCategory;
+    });
   }, [searchTerm, selectedCategory, allPosts]);
+
+  useEffect(() => {
+    setPosts(filteredPosts);
+  }, [filteredPosts]);
 
   const toggleLike = (postId: string) => {
     if (!session) {
@@ -62,14 +92,21 @@ export default function PostsPage() {
       return;
     }
     
+    const isLiked = likedPosts[postId];
+    
+    setLikedPosts({
+      ...likedPosts,
+      [postId]: !isLiked
+    });
+    
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, likes: [...(p.likes || []), { id: Date.now() }] }
+        ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
         : p
     ));
     setAllPosts(allPosts.map(p => 
       p.id === postId 
-        ? { ...p, likes: [...(p.likes || []), { id: Date.now() }] }
+        ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
         : p
     ));
   };
@@ -80,14 +117,21 @@ export default function PostsPage() {
       return;
     }
     
+    const isDisliked = dislikedPosts[postId];
+    
+    setDislikedPosts({
+      ...dislikedPosts,
+      [postId]: !isDisliked
+    });
+    
     setPosts(posts.map(p => 
       p.id === postId 
-        ? { ...p, dislikes: [...(p.dislikes || []), { id: Date.now() }] }
+        ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
         : p
     ));
     setAllPosts(allPosts.map(p => 
       p.id === postId 
-        ? { ...p, dislikes: [...(p.dislikes || []), { id: Date.now() }] }
+        ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
         : p
     ));
   };
@@ -117,52 +161,154 @@ export default function PostsPage() {
     }
   };
 
-  const followUser = async (authorId: string) => {
+  const toggleFollow = (postId: string) => {
+    if (!session) {
+      router.push('/lab2/login');
+      return;
+    }
+
+    const isFollowing = followedUsers[postId];
+
+    // Update follow state per post
+    setFollowedUsers({
+      ...followedUsers,
+      [postId]: !isFollowing
+    });
+
+    // Update follower counts in the specific post
+    const updatePosts = (postsList: any[]) => postsList.map(p =>
+      p.id === postId
+        ? {
+            ...p,
+            followers: isFollowing
+              ? p.followers.filter((f: any) => f.id !== currentUser)
+              : p.followers.some((f: any) => f.id === currentUser) ? p.followers : [...(p.followers || []), { id: currentUser }]
+          }
+        : p
+    );
+
+    setPosts(updatePosts(posts));
+    setAllPosts(updatePosts(allPosts));
+  };
+
+  const toggleFollowPost = (postId: string) => {
     if (!session) {
       router.push('/lab2/login');
       return;
     }
     
-    try {
-      const response = await fetch('/api/lab9/follow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId })
-      });
-      
-      if (response.ok) {
-        alert('Following user!');
-      }
-    } catch (error) {
-      console.error('Error following user:', error);
-    }
+    const isFollowing = followedPosts[postId];
+    
+    setFollowedPosts({
+      ...followedPosts,
+      [postId]: !isFollowing
+    });
+    
+    const updatePosts = (postsList: any[]) => postsList.map(p =>
+      p.id === postId
+        ? {
+            ...p,
+            postFollowers: isFollowing
+              ? p.postFollowers.filter((f: any) => f.id !== currentUser)
+              : p.postFollowers.some((f: any) => f.id === currentUser) ? p.postFollowers : [...(p.postFollowers || []), { id: currentUser }]
+          }
+        : p
+    );
+
+    setPosts(updatePosts(posts));
+    setAllPosts(updatePosts(allPosts));
   };
 
   const addComment = async (postId: string) => {
     const content = newComment[postId];
-    if (!content) return;
+    if (!content || submittingComment[postId]) return;
+
+    setSubmittingComment({ ...submittingComment, [postId]: true });
     
-    await fetch("/api/lab6/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, postId, authorId: currentUser }),
-    });
-    
-    setNewComment({ ...newComment, [postId]: "" });
-    // Refresh posts
-    const res = await fetch("/api/lab4/post");
-    const data = await res.json();
-    setPosts(data);
+    try {
+      const response = await fetch("/api/lab6/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, postId, authorId: currentUser }),
+      });
+
+      if (response.ok) {
+        setNewComment({ ...newComment, [postId]: "" });
+        
+        // Refresh posts from server to get actual comments
+        const res = await fetch("/api/lab4/post");
+        const data = await res.json();
+        setAllPosts(data);
+        setPosts(data.filter((post: any) => {
+          const matchesSearch = !searchTerm ||
+            post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            post.content.toLowerCase().includes(searchTerm.toLowerCase());
+          const matchesCategory = !selectedCategory ||
+            post.tags?.some((tag: any) => tag.name === selectedCategory);
+          return matchesSearch && matchesCategory;
+        }));
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    } finally {
+      setSubmittingComment({ ...submittingComment, [postId]: false });
+    }
   };
   
-  if (loading) return <div className="max-w-4xl mx-auto mt-10">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{
+        backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 shadow-lg">
+          <div className="flex items-center space-x-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+            <p className="text-xl font-semibold text-black">Loading posts...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{
+        backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 shadow-lg text-center">
+          <p className="text-xl font-semibold text-red-600 mb-4">Error loading posts</p>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-4">
-      <h1 className="text-3xl font-bold text-black mb-6">Posts</h1>
+    <div className="min-h-screen" style={{
+      backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
+    <div className="max-w-6xl mx-auto pt-10 p-4">
+      <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-lg">
+        <h1 className="text-3xl font-bold text-black mb-6">Posts</h1>
+      </div>
       
       {/* Search and Filter Section */}
-      <div className="mb-6 space-y-4">
+      <div className="mb-6 space-y-4 bg-white/70 backdrop-blur-sm rounded-lg p-4 shadow-lg">
         <div className="flex flex-col md:flex-row gap-4">
           <input
             type="text"
@@ -175,6 +321,7 @@ export default function PostsPage() {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="p-3 border-2 border-black rounded text-black bg-white"
+            aria-label="Select category"
           >
             <option value="">All Categories</option>
             {categories.map(category => (
@@ -194,16 +341,16 @@ export default function PostsPage() {
       </div>
       
       {posts.length === 0 && !loading ? (
-        <p className="text-black">No posts yet. <Link href="/lab3/editor" className="text-black hover:underline">Create one!</Link></p>
+        <p className="text-black">No posts yet. <Link href="/lab3/editor" className="text-black hover:underline" onClick={(e) => { if (!session) { e.preventDefault(); router.push('/lab2/login'); } }}>Create one!</Link></p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {posts.map(p => (
-            <div key={p.id} className="p-6 border-2 border-black rounded bg-white h-fit">
+            <div key={p.id} className="p-6 border-2 border-black rounded bg-white/80 backdrop-blur-sm h-fit shadow-lg">
             <div className="flex justify-between items-start mb-2">
               <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
                 {p.title}
               </Link>
-              {session && p.authorId === currentUser && (
+              {session && p.author?.email === session?.user?.email && (
                 <div className="flex gap-2 ml-2">
                   <Link 
                     href={`/lab3/editor?edit=${p.id}`}
@@ -221,30 +368,54 @@ export default function PostsPage() {
               )}
             </div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-black">By {p.author?.name || 'Unknown'}</p>
-              {session && p.authorId !== currentUser && (
-                <button 
-                  onClick={() => followUser(p.authorId)}
-                  className="px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm"
+              <div>
+                <p className="text-black">By {p.author?.name || 'Unknown'}</p>
+                <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
+              </div>
+              {session && p.author?.email !== session?.user?.email && (
+                <button
+                  onClick={() => toggleFollow(p.id)}
+                  className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
+                    followedUsers[p.id] ? 'bg-black text-white' : 'bg-white text-black'
+                  }`}
                 >
-                  Follow
+                  {followedUsers[p.id] ? 'Unfollow' : 'Follow'}
                 </button>
               )}
             </div>
             
+            {/* Follow Post Button */}
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-sm text-gray-600">{p.postFollowers?.length || 0} post followers</span>
+              {session && (
+                <button 
+                  onClick={() => toggleFollowPost(p.id)}
+                  className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
+                    followedPosts[p.id] ? 'bg-black text-white' : 'bg-white text-black'
+                  }`}
+                >
+                  {followedPosts[p.id] ? '📌 Following Post' : '📌 Follow Post'}
+                </button>
+              )}
+            </div>
+
             {/* Like, Dislike and Comment Actions */}
             <div className="flex gap-4 mt-4">
               {session ? (
                 <>
                   <button 
                     onClick={() => toggleLike(p.id)}
-                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white"
+                    className={`flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white ${
+                      likedPosts[p.id] ? 'bg-red-500 text-white border-red-500' : 'bg-white text-black'
+                    }`}
                   >
                     ❤️ {p.likes?.length || 0}
                   </button>
                   <button 
                     onClick={() => toggleDislike(p.id)}
-                    className="flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white"
+                    className={`flex items-center gap-2 px-3 py-1 border border-black rounded transition-all hover:bg-black hover:text-white ${
+                      dislikedPosts[p.id] ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-black'
+                    }`}
                   >
                     👎 {p.dislikes?.length || 0}
                   </button>
@@ -277,9 +448,10 @@ export default function PostsPage() {
                   />
                   <button
                     onClick={() => addComment(p.id)}
-                    className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all"
+                    disabled={submittingComment[p.id]}
+                    className="px-4 py-2 border border-black rounded hover:bg-black hover:text-white transition-all disabled:bg-gray-400"
                   >
-                    Post
+                    {submittingComment[p.id] ? 'Posting...' : 'Post'}
                   </button>
                 </div>
               </div>
@@ -295,7 +467,7 @@ export default function PostsPage() {
             {p.comments && p.comments.length > 0 && (
               <div className="mt-4 space-y-2">
                 {p.comments.map((comment: any) => (
-                  <div key={comment.id} className="p-3 bg-gray-50 border border-black rounded">
+                  <div key={comment.id} className="p-3 bg-white/80 backdrop-blur-sm border-2 border-black rounded">
                     <p className="text-sm font-semibold text-black">{comment.author?.name || 'Unknown'}</p>
                     <p className="text-black">{comment.content}</p>
                   </div>
@@ -306,6 +478,7 @@ export default function PostsPage() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
