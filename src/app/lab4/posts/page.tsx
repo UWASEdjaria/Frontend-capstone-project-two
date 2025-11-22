@@ -12,6 +12,7 @@ export default function PostsPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -24,9 +25,23 @@ export default function PostsPage() {
   const currentUser = session?.user?.email || "1";
   
   useEffect(() => {
-    fetch("/api/lab4/post")
-      .then(r => r.json())
-      .then(data => {
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/lab4/post");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch posts: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Fetched posts:', data);
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid data format received');
+        }
+        
         const postsWithCounts = data.map((post: any) => ({
           ...post,
           likes: post.likes || [],
@@ -34,18 +49,23 @@ export default function PostsPage() {
           followers: post.followers || [],
           postFollowers: post.postFollowers || []
         }));
+        
         setPosts(postsWithCounts);
         setAllPosts(postsWithCounts);
+        
         const uniqueCategories = [...new Set(data.flatMap((post: any) => 
           post.tags?.map((tag: any) => tag.name) || []
         ))] as string[];
         setCategories(uniqueCategories);
+      } catch (err) {
+        console.error('Error fetching posts:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load posts');
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      }
+    };
+    
+    fetchPosts();
   }, []);
 
   // Filter posts based on search and category
@@ -235,7 +255,45 @@ export default function PostsPage() {
     }
   };
   
-  if (loading) return <div className="max-w-4xl mx-auto mt-10 text-white">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{
+        backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 shadow-lg">
+          <div className="flex items-center space-x-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+            <p className="text-xl font-semibold text-black">Loading posts...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{
+        backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 shadow-lg text-center">
+          <p className="text-xl font-semibold text-red-600 mb-4">Error loading posts</p>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen" style={{
