@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function PostLike({ params }: { id: string }) {
+export default function PostLike({ params }: { params: { id: string } }) {
   const postId = Number(params.id);
   const userId = 1; // TEMP fake user — replace with real auth later
 
