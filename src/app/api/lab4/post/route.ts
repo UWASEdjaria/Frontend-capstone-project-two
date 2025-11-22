@@ -91,27 +91,13 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    console.log('Fetching posts...');
-    
-    // First try simple query
     const posts = await prisma.post.findMany({
       include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
+        author: true,
         tags: true,
         comments: {
           include: {
-            author: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+            author: true
           }
         }
       },
@@ -120,23 +106,9 @@ export async function GET() {
       }
     });
 
-    console.log(`Found ${posts.length} posts`);
-    
-    // Add empty arrays for missing relations
-    const postsWithDefaults = posts.map(post => ({
-      ...post,
-      likes: [],
-      dislikes: [],
-      followers: [],
-      postFollowers: []
-    }));
-
-    return NextResponse.json(postsWithDefaults);
+    return NextResponse.json(posts);
   } catch (error) {
     console.error("Error fetching posts:", error);
-    return NextResponse.json({ 
-      error: "Failed to fetch posts",
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
