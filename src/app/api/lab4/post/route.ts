@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
       user = await prisma.user.create({
         data: {
           email: session.user.email,
-          name: session.user.name || session.user.email.split('@')[0]
+          name: session.user.name || session.user.email.split('@')[0],
+          password: '' // OAuth users don't need password
         }
       });
       console.log('Created new user:', user);
