@@ -13,23 +13,33 @@ function slugify(text: string): string {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    console.log('Session:', session);
+    
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { title, content, tags, imageUrl } = await request.json();
+    console.log('Post data:', { title, content, tags, imageUrl });
 
     if (!title || !content) {
       return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
+    // Find or create user
+    let user = await prisma.user.findUnique({
       where: { email: session.user.email }
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      // Create user if doesn't exist
+      user = await prisma.user.create({
+        data: {
+          email: session.user.email,
+          name: session.user.name || session.user.email.split('@')[0]
+        }
+      });
+      console.log('Created new user:', user);
     }
 
     // Create tags if they exist
@@ -67,10 +77,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    console.log('Created post:', post);
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
     console.error("Error creating post:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Internal server error", 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 });
   }
 }
 
