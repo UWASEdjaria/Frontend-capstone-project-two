@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Post as PrismaPost, User } from "@/generated/prisma";
+import { Post as PrismaPost, User } from "@prisma/client";
 //post that also includes its author, but the author might be missing (null)
 type Post = PrismaPost & {
   author: User | null;
