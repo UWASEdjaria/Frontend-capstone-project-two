@@ -13,7 +13,7 @@ export default function Feed() {
   // Fetch posts from backend
   const fetchPosts = async () => {
     try {
-      const response = await fetch("/api/lab4/post");
+      const response = await fetch("/lab4/api/post");
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       setAllPosts(data);
