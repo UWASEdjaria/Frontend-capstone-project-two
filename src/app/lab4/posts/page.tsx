@@ -233,20 +233,21 @@ export default function PostsPage() {
       });
 
       if (response.ok) {
+        const newCommentData = await response.json();
         setNewComment({ ...newComment, [postId]: "" });
         
-        // Refresh posts from server to get actual comments
-        const res = await fetch("/api/lab4/post");
-        const data = await res.json();
-        setAllPosts(data);
-        setPosts(data.filter((post: any) => {
-          const matchesSearch = !searchTerm ||
-            post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            post.content.toLowerCase().includes(searchTerm.toLowerCase());
-          const matchesCategory = !selectedCategory ||
-            post.tags?.some((tag: any) => tag.name === selectedCategory);
-          return matchesSearch && matchesCategory;
-        }));
+        // Update posts locally with new comment
+        const updatePostsWithComment = (postsList: any[]) => postsList.map(p => 
+          p.id === postId 
+            ? { 
+                ...p, 
+                comments: [...(p.comments || []), newCommentData]
+              }
+            : p
+        );
+        
+        setPosts(updatePostsWithComment(posts));
+        setAllPosts(updatePostsWithComment(allPosts));
       }
     } catch (error) {
       console.error("Error adding comment:", error);

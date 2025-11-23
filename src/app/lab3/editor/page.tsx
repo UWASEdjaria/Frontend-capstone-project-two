@@ -98,7 +98,8 @@ export default function Editor() {
             
             <div className="min-h-[400px] border-2 border-gray-300 rounded-lg">
               {isClient && <JoditEditor value={form.content} config={{ placeholder: "Write your story...", buttons: ["bold", "italic", "ul", "ol", "link"], showCharsCounter: false, showWordsCounter: false, showXPathInStatusbar: false }}
-                onBlur={(content: string) => setForm({...form, content})} />}
+               //When the user stops typing, save the text to your form
+               onBlur={(content: string) => setForm({...form, content})} />}
             </div>
             
             <div className="flex gap-4 justify-center">
