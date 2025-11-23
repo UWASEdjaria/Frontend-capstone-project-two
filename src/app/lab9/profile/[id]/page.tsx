@@ -2,17 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function ProfilePage({ params }: any) {
   const userId = Number(params.id);
   const currentUser = 1;             
 
   const [followers, setFollowers] = useState(0);
-
-  async function load() {
-    const res = await fetch(`/api/lab9/followers/${userId}`);
-    const data = await res.json();
-    setFollowers(data.followers);
-  }
 
   async function toggleFollow() {
     await fetch("/api/lab9/follow", {
@@ -23,12 +18,21 @@ export default function ProfilePage({ params }: any) {
         followingId: userId,
       }),
     });
-    load();
+    
+    const res = await fetch(`/api/lab9/followers/${userId}`);
+    const data = await res.json();
+    setFollowers(data.followers);
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    const loadFollowers = async () => {
+      const res = await fetch(`/api/lab9/followers/${userId}`);
+      const data = await res.json();
+      setFollowers(data.followers);
+    };
+    
+    loadFollowers();
+  }, [userId]);
 
   return (
     <div className="p-4">
