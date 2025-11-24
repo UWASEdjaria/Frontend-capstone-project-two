@@ -95,8 +95,27 @@ export async function GET() {
     await prisma.$connect();
     console.log('Database connected successfully');
     
-    // Try simple query first
+    // Try simple query first with filters
     const posts = await prisma.post.findMany({
+      where: {
+        AND: [
+          {
+            NOT: {
+              title: {
+                contains: 'hair style',
+                mode: 'insensitive'
+              }
+            }
+          },
+          {
+            NOT: {
+              author: {
+                name: 'Anabell'
+              }
+            }
+          }
+        ]
+      },
       select: {
         id: true,
         title: true,

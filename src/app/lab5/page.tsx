@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -16,8 +17,15 @@ export default function Feed() {
       const response = await fetch("/api/lab4/post");
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
-      setAllPosts(data);
-      setPosts(data);
+      
+      // Filter out unwanted posts
+      const filteredData = data.filter((post: any) => 
+        !post.title?.toLowerCase().includes('hair style') &&
+        post.author?.name !== 'Anabell'
+      );
+      
+      setAllPosts(filteredData);
+      setPosts(filteredData);
     } catch (error) {
       console.error("Error fetching posts:", error);
     }
