@@ -22,7 +22,7 @@ export default function PostsPage() {
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
   const [submittingComment, setSubmittingComment] = useState<{[key: string]: boolean}>({});
-  const currentUser = session?.user?.email || "1";
+  const currentUser = session?.user?.email;
   
   useEffect(() => {
     const fetchPosts = async () => {

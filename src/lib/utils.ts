@@ -2,7 +2,7 @@
 export const CATEGORIES = ["Technology", "Writing", "Business", "Lifestyle"];
 
 export const BG_STYLE = {
-  backgroundImage: 'url("https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80")',
+  backgroundImage: `url("${process.env.NEXT_PUBLIC_BG_IMAGE || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'}")`,
   backgroundSize: 'cover',
   backgroundPosition: 'center', 
   backgroundAttachment: 'fixed'

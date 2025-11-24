@@ -78,7 +78,7 @@ export const authOptions: AuthOptions = {
   },
 //To make sure tokens can’t be forged or read by attackers.
 //jwt:Store everything inside the user’s browser token
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key",
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt" as const,
   },

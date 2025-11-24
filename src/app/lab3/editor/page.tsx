@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -18,6 +19,7 @@ export default function Editor() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [searchDrafts, setSearchDrafts] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [searchPosts, setSearchPosts] = useState("");
 

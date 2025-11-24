@@ -89,32 +89,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Test database connection first
-    await prisma.$connect();
-    console.log('Database connected successfully');
+    const session = await getServerSession(authOptions);
     
-    // Try simple query first with filters
+    // If no session, return empty array (no posts visible)
+    if (!session || !session.user?.email) {
+      return NextResponse.json([]);
+    }
+
+    // Find current user
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json([]);
+    }
+
+    // Only show posts by the current user
     const posts = await prisma.post.findMany({
       where: {
-        AND: [
-          {
-            NOT: {
-              title: {
-                contains: 'hair style',
-                mode: 'insensitive'
-              }
-            }
-          },
-          {
-            NOT: {
-              author: {
-                name: 'Anabell'
-              }
-            }
-          }
-        ]
+        authorId: user.id // Only user's own posts
       },
       select: {
         id: true,
@@ -123,9 +119,25 @@ export async function GET() {
         createdAt: true,
         author: {
           select: {
+            id: true,
             name: true,
             email: true
           }
+        },
+        tags: true,
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        likes: true,
+        _count: {
+          select: { likes: true, comments: true }
         }
       },
       orderBy: {
@@ -133,14 +145,9 @@ export async function GET() {
       }
     });
 
-    console.log(`Found ${posts.length} posts`);
-    
     // Add default values for missing fields
     const postsWithDefaults = posts.map(post => ({
       ...post,
-      tags: [],
-      comments: [],
-      likes: [],
       dislikes: [],
       followers: [],
       postFollowers: []
@@ -149,22 +156,6 @@ export async function GET() {
     return NextResponse.json(postsWithDefaults);
   } catch (error) {
     console.error("Database error:", error);
-    
-    // Return mock data if database fails
-    return NextResponse.json([
-      {
-        id: '1',
-        title: 'Welcome to Medium Clone',
-        content: 'This is a sample post to test the application.',
-        author: { name: 'Admin', email: 'admin@example.com' },
-        tags: [],
-        comments: [],
-        likes: [],
-        dislikes: [],
-        followers: [],
-        postFollowers: [],
-        createdAt: new Date().toISOString()
-      }
-    ]);
+    return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
   }
 }
