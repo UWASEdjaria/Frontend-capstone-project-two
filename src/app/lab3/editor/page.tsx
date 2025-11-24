@@ -17,8 +17,23 @@ export default function Editor() {
   const [uploading, setUploading] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [searchDrafts, setSearchDrafts] = useState("");
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [searchPosts, setSearchPosts] = useState("");
 
-  useEffect(() => setIsClient(true), []);
+  useEffect(() => {
+    setIsClient(true);
+    // Fetch user's existing posts
+    if (session) {
+      fetch("/api/lab4/post")
+        .then(res => res.json())
+        .then(data => {
+          const userPosts = data.filter((post: any) => post.author?.email === session.user?.email);
+          setMyPosts(userPosts);
+        })
+        .catch(err => console.error("Error fetching posts:", err));
+    }
+  }, [session]);
 
   if (!session) {
     return (
@@ -111,22 +126,104 @@ export default function Editor() {
           </div>
         </div>
         
+        {/* Drafts Section */}
         {drafts.length > 0 && (
           <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-2 border-gray-300 p-6">
-            <h2 className="text-xl font-bold mb-4 text-black">Saved Drafts</h2>
-            <div className="space-y-3">
-              {drafts.map(draft => (
-                <div key={draft.id} className="flex items-center justify-between p-3 border border-gray-300 rounded">
-                  <div>
+            <h2 className="text-xl font-bold mb-4 text-black">Saved Drafts ({drafts.length})</h2>
+            
+            {/* Search Drafts */}
+            <div className="mb-4">
+              <input
+                placeholder="Search drafts..."
+                value={searchDrafts}
+                onChange={(e) => setSearchDrafts(e.target.value)}
+                className="w-full p-3 border-2 border-gray-300 rounded text-black focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {drafts
+                .filter(draft => 
+                  !searchDrafts || 
+                  draft.title.toLowerCase().includes(searchDrafts.toLowerCase()) ||
+                  draft.content.toLowerCase().includes(searchDrafts.toLowerCase())
+                )
+                .map(draft => (
+                <div key={draft.id} className="flex items-center justify-between p-3 border border-gray-300 rounded hover:bg-gray-50">
+                  <div className="flex-1">
                     <p className="font-medium text-black">{draft.title}</p>
-                    <p className="text-sm text-gray-600">{draft.date}</p>
+                    <p className="text-sm text-gray-600">{draft.date} • {draft.category || 'No category'}</p>
+                    <p className="text-xs text-gray-500 truncate">{draft.content.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => loadDraft(draft)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Load</button>
-                    <button onClick={() => deleteDraft(draft.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
+                  <div className="flex gap-2 ml-4">
+                    <button onClick={() => loadDraft(draft)} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Load</button>
+                    <button onClick={() => deleteDraft(draft.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">Delete</button>
                   </div>
                 </div>
               ))}
+              {drafts.filter(draft => 
+                !searchDrafts || 
+                draft.title.toLowerCase().includes(searchDrafts.toLowerCase()) ||
+                draft.content.toLowerCase().includes(searchDrafts.toLowerCase())
+              ).length === 0 && searchDrafts && (
+                <p className="text-gray-500 text-center py-4">No drafts match your search.</p>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* My Published Posts Section */}
+        {myPosts.length > 0 && (
+          <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-lg shadow-lg border-2 border-gray-300 p-6">
+            <h2 className="text-xl font-bold mb-4 text-black">My Published Posts ({myPosts.length})</h2>
+            
+            {/* Search Posts */}
+            <div className="mb-4">
+              <input
+                placeholder="Search your posts..."
+                value={searchPosts}
+                onChange={(e) => setSearchPosts(e.target.value)}
+                className="w-full p-3 border-2 border-gray-300 rounded text-black focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {myPosts
+                .filter(post => 
+                  !searchPosts || 
+                  post.title.toLowerCase().includes(searchPosts.toLowerCase()) ||
+                  post.content.toLowerCase().includes(searchPosts.toLowerCase())
+                )
+                .map(post => (
+                <div key={post.id} className="flex items-center justify-between p-3 border border-gray-300 rounded hover:bg-gray-50">
+                  <div className="flex-1">
+                    <p className="font-medium text-black">{post.title}</p>
+                    <p className="text-sm text-gray-600">{new Date(post.createdAt).toLocaleDateString()} • {post.tags?.[0]?.name || 'No category'}</p>
+                    <p className="text-xs text-gray-500 truncate">{post.content.replace(/<[^>]*>/g, '').substring(0, 100)}...</p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button 
+                      onClick={() => router.push(`/lab3/editor?edit=${post.id}`)}
+                      className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      onClick={() => router.push(`/lab4/posts/${post.id}`)}
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                    >
+                      View
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {myPosts.filter(post => 
+                !searchPosts || 
+                post.title.toLowerCase().includes(searchPosts.toLowerCase()) ||
+                post.content.toLowerCase().includes(searchPosts.toLowerCase())
+              ).length === 0 && searchPosts && (
+                <p className="text-gray-500 text-center py-4">No posts match your search.</p>
+              )}
             </div>
           </div>
         )}

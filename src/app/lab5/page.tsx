@@ -13,7 +13,7 @@ export default function Feed() {
   // Fetch posts from backend
   const fetchPosts = async () => {
     try {
-      const response = await fetch("/lab4/api/post");
+      const response = await fetch("/api/lab4/post");
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       setAllPosts(data);
@@ -30,12 +30,15 @@ export default function Feed() {
 
   // Filter posts based on search term
   useEffect(() => {
-    if (!search) {
+    if (!search.trim()) {
       setPosts(allPosts);
     } else {
+      const searchLower = search.toLowerCase();
       const filtered = allPosts.filter(post =>
-        post.title.toLowerCase().includes(search.toLowerCase()) ||
-        post.content.toLowerCase().includes(search.toLowerCase())
+        post.title?.toLowerCase().includes(searchLower) ||
+        post.content?.toLowerCase().includes(searchLower) ||
+        post.author?.name?.toLowerCase().includes(searchLower) ||
+        post.tags?.some((tag: any) => tag.name?.toLowerCase().includes(searchLower))
       );
       setPosts(filtered);
     }
@@ -56,18 +59,46 @@ export default function Feed() {
         {/* Header */}
         <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 mb-6 shadow-lg">
           <h1 className="text-3xl font-bold text-black mb-4">Home Feed</h1>
-          <input
-            placeholder="Search posts..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="p-2 border-2 border-black rounded flex-1 text-black transition-all duration-300 focus:shadow-md focus:scale-105"
-          />
+          <div className="relative">
+            <input
+              placeholder="Search posts by title, content, author, or tags..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full p-3 border-2 border-black rounded text-black transition-all duration-300 focus:shadow-md focus:scale-105 pr-10"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Search Results Info */}
+        {search && (
+          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 mb-4 shadow-lg">
+            <p className="text-black">
+              {posts.length > 0 ? `Found ${posts.length} post(s) for "${search}"` : `No posts found for "${search}"`}
+            </p>
+          </div>
+        )}
 
         {/* Posts list */}
         <div className="flex flex-col gap-4">
           {posts.length === 0 ? (
-            <p className="text-black">No posts found.</p>
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-8 text-center shadow-lg">
+              <p className="text-black text-lg">
+                {search ? "No posts match your search." : "No posts available."}
+              </p>
+              {!search && (
+                <Link href="/lab3/editor" className="text-blue-600 hover:underline mt-2 inline-block">
+                  Create the first post!
+                </Link>
+              )}
+            </div>
           ) : (
             posts.map((p) => (
               <Link
@@ -77,6 +108,15 @@ export default function Feed() {
               >
                 <h2 className="text-xl font-bold text-black">{p.title}</h2>
                 <p className="text-black">By {p.author?.name || "Unknown"}</p>
+                {p.tags && p.tags.length > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    {p.tags.map((tag: any) => (
+                      <span key={tag.id} className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded">
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-4 mt-2 text-sm text-black">
                   <span>❤️ {p._count?.likes || 0}</span>
                   <span>💬 {p._count?.comments || 0}</span>
