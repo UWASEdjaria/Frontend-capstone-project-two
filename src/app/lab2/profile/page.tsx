@@ -6,15 +6,14 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 const Profile: React.FC = () => {
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [showWelcome, setShowWelcome] = useState(true);
   const [posts] = useState<{ id: string; title: string; image?: string }[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
-    bio: '',
-    showFollowButton: true
+    bio: ''
   });
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount] = useState(0);
@@ -34,37 +33,14 @@ const Profile: React.FC = () => {
     }
   }, [session?.user]);
 
-  const handleFollow = async () => {
+  const handleFollow = () => {
     setIsFollowing(!isFollowing);
     setFollowingCount(prev => isFollowing ? prev - 1 : prev + 1);
   };
 
-  const handleEditProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEditProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      const res = await fetch('/api/lab2/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: session?.user?.email,
-          name: editForm.name,
-          bio: editForm.bio
-        })
-      });
-      
-      if (res.ok) {
-        await update({
-          ...session,
-          user: {
-            ...session?.user,
-            name: editForm.name
-          }
-        });
-        setShowEditModal(false);
-      }
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-    }
+    setShowEditModal(false);
   };
 
   if (status === "loading") return <div className="text-center mt-10 text-white">Loading...</div>;
@@ -205,17 +181,6 @@ const Profile: React.FC = () => {
                   onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
                   className="w-full p-2 border rounded text-black h-20"
                 />
-              </div>
-              <div className="mb-4">
-                <label className="flex items-center text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={editForm.showFollowButton}
-                    onChange={(e) => setEditForm({...editForm, showFollowButton: e.target.checked})}
-                    className="mr-2"
-                  />
-                  Show Follow Button
-                </label>
               </div>
               <div className="flex gap-2">
                 <button type="submit" className="flex-1 bg-purple-600 text-white py-2 rounded hover:bg-purple-700">Save</button>
