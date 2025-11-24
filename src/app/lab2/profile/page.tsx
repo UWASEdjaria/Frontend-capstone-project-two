@@ -9,15 +9,16 @@ const Profile: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [showWelcome, setShowWelcome] = useState(true);
-  const [posts] = useState<{ id: string; title: string; image?: string }[]>([]);
+  const [posts, setPosts] = useState<{ id: string; title: string; imageUrl?: string }[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
     bio: ''
   });
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followersCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowWelcome(false), 4000);
@@ -30,8 +31,41 @@ const Profile: React.FC = () => {
         ...prev,
         name: session.user.name || ''
       }));
+      fetchUserData();
     }
   }, [session?.user]);
+
+  const fetchUserData = async () => {
+    if (!session?.user?.email) return;
+    
+    try {
+      setLoading(true);
+      
+      // Fetch user's posts
+      const postsRes = await fetch('/api/lab4/post');
+      if (postsRes.ok) {
+        const userPosts = await postsRes.json();
+        setPosts(userPosts);
+      }
+      
+      // Fetch follow counts from database
+      const followRes = await fetch('/api/lab2/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.user.email })
+      });
+      
+      if (followRes.ok) {
+        const followData = await followRes.json();
+        setFollowersCount(followData.followersCount || 0);
+        setFollowingCount(followData.followingCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -43,7 +77,7 @@ const Profile: React.FC = () => {
     setShowEditModal(false);
   };
 
-  if (status === "loading") return <div className="text-center mt-10 text-white">Loading...</div>;
+  if (status === "loading" || loading) return <div className="text-center mt-10 text-white">Loading...</div>;
   
   if (!session) {
     router.push('/lab2/login');
@@ -105,60 +139,9 @@ const Profile: React.FC = () => {
         <button onClick={() => signOut({ callbackUrl: "/lab2/login" })} className="flex-1 border border-white text-white rounded-md py-1 text-sm font-semibold hover:bg-white hover:text-black transition">Logout</button>
       </div>
 
-      <div className="px-4 mt-8">
-        <h2 className="font-semibold text-white mb-4">Followers ({followersCount})</h2>
-        <div className="bg-white/10 rounded-lg p-4 space-y-2">
-          {followersCount === 0 ? (
-            <p className="text-white text-sm text-center opacity-70">No followers yet</p>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 p-2 bg-white/5 rounded">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">U</div>
-                <span className="text-white text-sm">Sample User</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="px-4 mt-6">
-        <h2 className="font-semibold text-white mb-4">Following ({followingCount})</h2>
-        <div className="bg-white/10 rounded-lg p-4 space-y-2">
-          {followingCount === 0 ? (
-            <p className="text-white text-sm text-center opacity-70">Not following anyone yet</p>
-          ) : (
-            <div className="space-y-2">
-              {Array.from({ length: followingCount }, (_, i) => (
-                <div key={i} className="flex items-center gap-3 p-2 bg-white/5 rounded">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {String.fromCharCode(65 + i)}
-                  </div>
-                  <span className="text-white text-sm">User {i + 1}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <h2 className="px-4 mt-8 font-semibold text-white">Posts</h2>
-      <div className="grid grid-cols-3 gap-1 mt-3 px-1">
-        {posts.length === 0 ? (
-          <p className="text-white col-span-3 text-center">No posts yet</p>
-        ) : (
-          posts.map((post) => (
-            <div key={post.id} className="h-28 w-full bg-gray-700">
-              {post.image ? (
-                <Image src={post.image} alt={post.title} width={112} height={112} className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex items-center justify-center h-full text-white font-bold text-xl">
-                  {post.title?.charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+
 
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

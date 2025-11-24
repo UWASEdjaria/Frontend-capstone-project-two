@@ -1,11 +1,44 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function GET(req: Request, { params }: any) {
-  const count = await prisma.followLab9.count({
-    where: { followingId: Number(params.id) },
-  });
+interface GetParams {
+  params: { id: string };
+}
 
-  return NextResponse.json({ followers: count });
+export async function GET(req: Request, { params }: GetParams) {
+  try {
+    const url = new URL(req.url);
+    const currentUserEmail = url.searchParams.get('currentUser');
+    
+    // Get followers count
+    const followersCount = await prisma.follow.count({
+      where: { followingId: params.id }
+    });
+
+    let isFollowing = false;
+    
+    if (currentUserEmail) {
+      const currentUser = await prisma.user.findUnique({
+        where: { email: currentUserEmail }
+      });
+      
+      if (currentUser) {
+        const followRecord = await prisma.follow.findFirst({
+          where: {
+            followerId: currentUser.id,
+            followingId: params.id
+          }
+        });
+        isFollowing = !!followRecord;
+      }
+    }
+
+    return NextResponse.json({ 
+      followers: followersCount,
+      isFollowing
+    });
+  } catch (error) {
+    console.error("Error fetching followers:", error);
+    return NextResponse.json({ error: "Failed to fetch followers" }, { status: 500 });
+  }
 }

@@ -44,10 +44,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create tags if they exist
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let tagRecords: any[] = [];
-    if (tags && tags.length > 0) {
-      const tagPromises = tags.map(async (tagName: string) => {
+    let tagRecords: { id: string; name: string }[] = [];
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      const tagPromises = (tags as string[]).map(async (tagName: string) => {
         return await prisma.tag.upsert({
           where: { name: tagName },
           update: {},

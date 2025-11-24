@@ -3,9 +3,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import CategoryFilter from "@/components/CategoryFilter";
 
 export default function Feed() {
   const [search, setSearch] = useState(""); // Search input
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>([]); // Filtered posts
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,21 +32,30 @@ export default function Feed() {
     fetchPosts();
   }, []);
 
-  // Filter posts based on search term
+  // Filter posts based on search term and category
   useEffect(() => {
-    if (!search.trim()) {
-      setPosts(allPosts);
-    } else {
+    let filtered = allPosts;
+
+    // Filter by category first
+    if (selectedCategory) {
+      filtered = filtered.filter(post =>
+        post.tags?.some((tag: any) => tag.name === selectedCategory)
+      );
+    }
+
+    // Then filter by search term
+    if (search.trim()) {
       const searchLower = search.toLowerCase();
-      const filtered = allPosts.filter(post =>
+      filtered = filtered.filter(post =>
         post.title?.toLowerCase().includes(searchLower) ||
         post.content?.toLowerCase().includes(searchLower) ||
         post.author?.name?.toLowerCase().includes(searchLower) ||
         post.tags?.some((tag: any) => tag.name?.toLowerCase().includes(searchLower))
       );
-      setPosts(filtered);
     }
-  }, [search, allPosts]);
+
+    setPosts(filtered);
+  }, [search, selectedCategory, allPosts]);
 
   return (
     <div
@@ -79,12 +90,33 @@ export default function Feed() {
           </div>
         </div>
 
-        {/* Search Results Info */}
-        {search && (
+        {/* Category Filter */}
+        <CategoryFilter 
+          onCategorySelect={setSelectedCategory}
+          selectedCategory={selectedCategory}
+        />
+
+        {/* Search/Filter Results Info */}
+        {(search || selectedCategory) && (
           <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 mb-4 shadow-lg">
             <p className="text-black">
-              {posts.length > 0 ? `Found ${posts.length} post(s) for "${search}"` : `No posts found for "${search}"`}
+              {posts.length > 0 ? (
+                `Found ${posts.length} post(s)${search ? ` for "${search}"` : ''}${selectedCategory ? ` in "${selectedCategory}"` : ''}`
+              ) : (
+                `No posts found${search ? ` for "${search}"` : ''}${selectedCategory ? ` in "${selectedCategory}"` : ''}`
+              )}
             </p>
+            {(search || selectedCategory) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setSelectedCategory(null);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 mt-1"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
 

@@ -9,18 +9,27 @@ export const BG_STYLE = {
 };
 
 // Shared API functions
-export const apiCall = async (url: string, options?: RequestInit) => {
+interface ApiResponse<T = unknown> {
+  ok: boolean;
+  data: T;
+}
+
+export const apiCall = async <T = unknown>(url: string, options?: RequestInit): Promise<ApiResponse<T>> => {
   try {
     const res = await fetch(url, options);
     return { ok: res.ok, data: res.ok ? await res.json() : await res.text() };
   } catch (error) {
-    return { ok: false, data: error };
+    return { ok: false, data: error as T };
   }
 };
 
-export const uploadImage = async (file: File) => {
+interface UploadResponse {
+  url: string;
+}
+
+export const uploadImage = async (file: File): Promise<string | null> => {
   const formData = new FormData();
   formData.append('file', file);
-  const result = await apiCall('/api/upload', { method: 'POST', body: formData });
+  const result = await apiCall<UploadResponse>('/api/upload', { method: 'POST', body: formData });
   return result.ok ? result.data.url : null;
 };

@@ -4,49 +4,61 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ProfilePage({ params }: any) {
+interface ProfilePageProps {
+  params: { id: string };
+}
+
+export default function ProfilePage({ params }: ProfilePageProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const userId = params.id;
-  const currentUser = session?.user?.id;
+  const currentUserEmail = session?.user?.email;
 
-  const [followers, setFollowers] = useState(0);
+  const [followers, setFollowers] = useState<number>(0);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
 
   async function toggleFollow() {
-    if (!session) {
+    if (!session || !currentUserEmail) {
       router.push('/lab2/login');
       return;
     }
 
-    if (!currentUser) {
-      alert('Please login to follow users');
-      return;
+    try {
+      const res = await fetch("/api/lab9/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentUserEmail,
+          targetUserId: userId,
+        }),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setIsFollowing(data.isFollowing);
+        setFollowers(data.followersCount);
+      }
+    } catch (error) {
+      console.error('Follow error:', error);
     }
-
-    await fetch("/api/lab9/follow", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        followerId: currentUser,
-        followingId: userId,
-      }),
-    });
-    
-    const res = await fetch(`/api/lab9/followers/${userId}`);
-    const data = await res.json();
-    setFollowers(data.followers);
   }
 
   useEffect(() => {
-    const loadFollowers = async () => {
-      const res = await fetch(`/api/lab9/followers/${userId}`);
-      const data = await res.json();
-      setFollowers(data.followers);
+    const loadFollowData = async () => {
+      if (!currentUserEmail) return;
+      
+      try {
+        const res = await fetch(`/api/lab9/followers/${userId}?currentUser=${encodeURIComponent(currentUserEmail)}`);
+        const data = await res.json();
+        setFollowers(data.followers);
+        setIsFollowing(data.isFollowing || false);
+      } catch (error) {
+        console.error('Load follow data error:', error);
+      }
     };
     
-    loadFollowers();
-  }, [userId]);
+    loadFollowData();
+  }, [userId, currentUserEmail]);
 
   if (!session) {
     return (
@@ -68,7 +80,7 @@ export default function ProfilePage({ params }: any) {
         onClick={toggleFollow}
         className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
       >
-        Follow ({followers})
+        {isFollowing ? 'Unfollow' : 'Follow'} ({followers})
       </button>
     </div>
   );
