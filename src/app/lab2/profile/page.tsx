@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -11,11 +11,11 @@ const Profile: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [posts] = useState<{ id: string; title: string; image?: string }[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState(() => ({
-    name: session?.user?.name || '',
+  const [editForm, setEditForm] = useState({
+    name: '',
     bio: '',
     showFollowButton: true
-  }));
+  });
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -25,10 +25,16 @@ const Profile: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-
+  useEffect(() => {
+    if (session?.user) {
+      setEditForm(prev => ({
+        ...prev,
+        name: session.user.name || ''
+      }));
+    }
+  }, [session?.user]);
 
   const handleFollow = async () => {
-    // Mock follow functionality for now
     setIsFollowing(!isFollowing);
     setFollowingCount(prev => isFollowing ? prev - 1 : prev + 1);
   };
@@ -47,7 +53,6 @@ const Profile: React.FC = () => {
       });
       
       if (res.ok) {
-        // Update session with new data
         await update({
           ...session,
           user: {
@@ -55,12 +60,7 @@ const Profile: React.FC = () => {
             name: editForm.name
           }
         });
-        console.log('Profile updated successfully');
         setShowEditModal(false);
-        // Small delay then reload to ensure session is updated
-        setTimeout(() => {
-          router.refresh();
-        }, 500);
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -69,8 +69,6 @@ const Profile: React.FC = () => {
 
   if (status === "loading") return <div className="text-center mt-10 text-white">Loading...</div>;
   
-  // Debug: Check what's in the session
-  console.log('Current session:', session);
   if (!session) {
     router.push('/lab2/login');
     return null;
@@ -80,7 +78,6 @@ const Profile: React.FC = () => {
 
   return (
     <div className="max-w-lg mx-auto mt-10">
-
       {showWelcome && (
         <div className="bg-green-600 text-white p-3 rounded-md text-center mb-5 font-medium">
           👋 Welcome back, {session.user?.name || session.user?.email}!
@@ -88,7 +85,6 @@ const Profile: React.FC = () => {
       )}
 
       <div className="flex items-center gap-6 px-4">
-
         <div className="bg-gradient-to-tr from-pink-500 via-purple-500 to-yellow-500 p-[3px] rounded-full">
           {session.user?.image ? (
             <Image src={session.user.image} alt="Profile" width={96} height={96} className="w-24 h-24 rounded-full object-cover bg-white" />
@@ -133,7 +129,6 @@ const Profile: React.FC = () => {
         <button onClick={() => signOut({ callbackUrl: "/lab2/login" })} className="flex-1 border border-white text-white rounded-md py-1 text-sm font-semibold hover:bg-white hover:text-black transition">Logout</button>
       </div>
 
-      {/* Followers Section */}
       <div className="px-4 mt-8">
         <h2 className="font-semibold text-white mb-4">Followers ({followersCount})</h2>
         <div className="bg-white/10 rounded-lg p-4 space-y-2">
@@ -141,7 +136,6 @@ const Profile: React.FC = () => {
             <p className="text-white text-sm text-center opacity-70">No followers yet</p>
           ) : (
             <div className="space-y-2">
-              {/* Mock followers - replace with actual data */}
               <div className="flex items-center gap-3 p-2 bg-white/5 rounded">
                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">U</div>
                 <span className="text-white text-sm">Sample User</span>
@@ -151,7 +145,6 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      {/* Following Section */}
       <div className="px-4 mt-6">
         <h2 className="font-semibold text-white mb-4">Following ({followingCount})</h2>
         <div className="bg-white/10 rounded-lg p-4 space-y-2">
@@ -159,7 +152,6 @@ const Profile: React.FC = () => {
             <p className="text-white text-sm text-center opacity-70">Not following anyone yet</p>
           ) : (
             <div className="space-y-2">
-              {/* Mock following - replace with actual data */}
               {Array.from({ length: followingCount }, (_, i) => (
                 <div key={i} className="flex items-center gap-3 p-2 bg-white/5 rounded">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
