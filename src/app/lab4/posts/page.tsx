@@ -18,7 +18,7 @@ export default function PostsPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [followedUsers, setFollowedUsers] = useState<{[key: string]: boolean}>({});
-  const [followedPosts, setFollowedPosts] = useState<{[key: string]: boolean}>({});
+
   const [likedPosts, setLikedPosts] = useState<{[key: string]: boolean}>({});
   const [dislikedPosts, setDislikedPosts] = useState<{[key: string]: boolean}>({});
   const [submittingComment, setSubmittingComment] = useState<{[key: string]: boolean}>({});
@@ -191,33 +191,7 @@ export default function PostsPage() {
     setAllPosts(updatePosts(allPosts));
   };
 
-  const toggleFollowPost = (postId: string) => {
-    if (!session) {
-      router.push('/lab2/login');
-      return;
-    }
-    
-    const isFollowing = followedPosts[postId];
-    
-    setFollowedPosts({
-      ...followedPosts,
-      [postId]: !isFollowing
-    });
-    
-    const updatePosts = (postsList: any[]) => postsList.map(p =>
-      p.id === postId
-        ? {
-            ...p,
-            postFollowers: isFollowing
-              ? p.postFollowers.filter((f: any) => f.id !== currentUser)
-              : p.postFollowers.some((f: any) => f.id === currentUser) ? p.postFollowers : [...(p.postFollowers || []), { id: currentUser }]
-          }
-        : p
-    );
 
-    setPosts(updatePosts(posts));
-    setAllPosts(updatePosts(allPosts));
-  };
 
   const addComment = async (postId: string) => {
     const content = newComment[postId];
@@ -373,7 +347,7 @@ export default function PostsPage() {
                 <p className="text-black">By {p.author?.name || 'Unknown'}</p>
                 <p className="text-sm text-gray-600">{p.followers?.length || 0} followers</p>
               </div>
-              {session && p.author?.email !== session?.user?.email && (
+              {session && (
                 <button
                   onClick={() => toggleFollow(p.id)}
                   className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
@@ -384,21 +358,7 @@ export default function PostsPage() {
                 </button>
               )}
             </div>
-            
-            {/* Follow Post Button */}
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-sm text-gray-600">{p.postFollowers?.length || 0} post followers</span>
-              {session && (
-                <button 
-                  onClick={() => toggleFollowPost(p.id)}
-                  className={`px-3 py-1 border border-black rounded hover:bg-black hover:text-white transition-all text-sm ${
-                    followedPosts[p.id] ? 'bg-black text-white' : 'bg-white text-black'
-                  }`}
-                >
-                  {followedPosts[p.id] ? '📌 Following Post' : '📌 Follow Post'}
-                </button>
-              )}
-            </div>
+
 
             {/* Like, Dislike and Comment Actions */}
             <div className="flex gap-4 mt-4">
