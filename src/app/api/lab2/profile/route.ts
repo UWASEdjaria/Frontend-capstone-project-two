@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
+      userId: user.id,
       followersCount: user._count.followers,
       followingCount: user._count.following
     });

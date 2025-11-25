@@ -67,9 +67,40 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-    setFollowingCount(prev => isFollowing ? prev - 1 : prev + 1);
+  const handleFollow = async () => {
+    if (!session?.user?.email) return;
+    
+    try {
+      // Get current user ID first
+      const userResponse = await fetch('/api/lab2/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.user.email })
+      });
+      
+      if (!userResponse.ok) return;
+      
+      const userData = await userResponse.json();
+      
+      const response = await fetch('/api/lab9/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          currentUserEmail: session.user.email,
+          targetUserId: userData.userId // Following yourself for demo
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setIsFollowing(result.isFollowing);
+        setFollowersCount(result.followersCount);
+        // Refresh user data to get updated counts
+        fetchUserData();
+      }
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
   };
 
   const handleEditProfile = (e: React.FormEvent<HTMLFormElement>) => {
