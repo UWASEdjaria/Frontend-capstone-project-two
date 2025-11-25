@@ -1,18 +1,15 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-interface GetParams {
-  params: { id: string };
-}
-
-export async function GET(req: Request, { params }: GetParams) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const url = new URL(req.url);
     const currentUserEmail = url.searchParams.get('currentUser');
     
     // Get followers count
     const followersCount = await prisma.follow.count({
-      where: { followingId: params.id }
+      where: { followingId: id }
     });
 
     let isFollowing = false;
@@ -26,7 +23,7 @@ export async function GET(req: Request, { params }: GetParams) {
         const followRecord = await prisma.follow.findFirst({
           where: {
             followerId: currentUser.id,
-            followingId: params.id
+            followingId: id
           }
         });
         isFollowing = !!followRecord;

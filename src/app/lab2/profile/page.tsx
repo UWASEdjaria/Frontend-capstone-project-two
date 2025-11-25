@@ -29,7 +29,7 @@ const Profile: React.FC = () => {
     if (session?.user) {
       setEditForm(prev => ({
         ...prev,
-        name: session.user.name || ''
+        name: session.user?.name || ''
       }));
       fetchUserData();
     }
