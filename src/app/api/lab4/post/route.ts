@@ -106,11 +106,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Only show posts by the current user
+    // Show all posts
     const posts = await prisma.post.findMany({
-      where: {
-        authorId: user.id // Only user's own posts
-      },
       select: {
         id: true,
         title: true,
