@@ -12,9 +12,9 @@ const Profile: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [posts, setPosts] = useState<{ id: string; title: string; imageUrl?: string; createdAt: string; excerpt?: string }[]>([]);
   const [followers, setFollowers] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [allPosts, setAllPosts] = useState<any[]>([]);
+  const [allPosts, setAllPosts] = useState<{ id: string; title: string; authorId: string; imageUrl?: string; createdAt: string; excerpt?: string }[]>([]);
   const [followingUsers, setFollowingUsers] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [followingPosts, setFollowingPosts] = useState<any[]>([]);
+  const [followingPosts, setFollowingPosts] = useState<{ id: string; title: string; authorId: string; imageUrl?: string; createdAt: string; excerpt?: string; author?: { name?: string; email?: string } }[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -102,8 +102,8 @@ const Profile: React.FC = () => {
           setFollowingUsers(following);
           
           // Get posts from followed users only
-          const followingUserIds = following.map((user: any) => user.id);
-          const followingUserPosts = allPostsData.filter((post: any) => 
+          const followingUserIds = following.map((user: { id: string; name: string; email: string }) => user.id);
+          const followingUserPosts = allPosts.filter((post: { authorId: string }) => 
             followingUserIds.includes(post.authorId)
           );
           setFollowingPosts(followingUserPosts);
@@ -291,7 +291,7 @@ const Profile: React.FC = () => {
                     <Image src={post.imageUrl} alt={post.title} width={300} height={200} className="w-full h-32 object-cover rounded" />
                   )}
                   <p className="text-white/50 text-xs mt-2">
-                    {new Date(post.createdAt).toLocaleDateDate()}
+                    {new Date(post.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </Link>
