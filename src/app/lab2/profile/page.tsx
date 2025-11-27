@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 const Profile: React.FC = () => {
   const { data: session, status } = useSession();
@@ -12,6 +13,8 @@ const Profile: React.FC = () => {
   const [posts, setPosts] = useState<{ id: string; title: string; imageUrl?: string; createdAt: string; excerpt?: string }[]>([]);
   const [followers, setFollowers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [followingPosts, setFollowingPosts] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -35,6 +38,17 @@ const Profile: React.FC = () => {
       }));
       fetchUserData();
     }
+  }, [session?.user]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (session?.user) {
+        fetchUserData();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [session?.user]);
 
   const fetchUserData = async () => {
@@ -74,6 +88,26 @@ const Profile: React.FC = () => {
           const followersData = await followersListRes.json();
           setFollowers(followersData.followers || []);
         }
+        
+        // Fetch users that current user is following
+        const followsRes = await fetch('/api/lab9/follow/following', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userEmail: session.user.email })
+        });
+        
+        if (followsRes.ok) {
+          const followsData = await followsRes.json();
+          const following = followsData.following || [];
+          setFollowingUsers(following);
+          
+          // Get posts from followed users only
+          const followingUserIds = following.map((user: any) => user.id);
+          const followingUserPosts = allPostsData.filter((post: any) => 
+            followingUserIds.includes(post.authorId)
+          );
+          setFollowingPosts(followingUserPosts);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -102,14 +136,14 @@ const Profile: React.FC = () => {
     }
   };
 
-  if (status === "loading" || loading) return <div className="text-center mt-10 text-white">Loading...</div>;
-  
   useEffect(() => {
     if (status !== "loading" && !session) {
       router.push('/lab2/login');
     }
   }, [session, status, router]);
 
+  if (status === "loading" || loading) return <div className="text-center mt-10 text-white">Loading...</div>;
+  
   if (!session) {
     return null;
   }
@@ -117,7 +151,7 @@ const Profile: React.FC = () => {
   const initial = session.user?.name?.charAt(0).toUpperCase() || session.user?.email?.charAt(0).toUpperCase();
 
   return (
-    <div className="max-w-lg mx-auto mt-10">
+    <div className="max-w-4xl mx-auto mt-10">
       {showWelcome && (
         <div className="bg-green-600 text-white p-3 rounded-md text-center mb-5 font-medium">
           👋 Welcome back, {session.user?.name || session.user?.email}!
@@ -170,20 +204,22 @@ const Profile: React.FC = () => {
       <div className="mt-6 px-4">
         <h3 className="text-white text-lg font-semibold mb-3">My Posts ({posts.length})</h3>
         {posts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {posts.map((post) => (
-              <div key={post.id} className="bg-white/10 rounded-lg p-4">
-                <h4 className="text-white font-medium text-sm mb-2">{post.title}</h4>
-                {post.excerpt && (
-                  <p className="text-white/70 text-xs mb-2">{post.excerpt.replace(/<[^>]*>/g, '').replace(/&lt;|&gt;|&amp;|&quot;|&#39;/g, '')}</p>
-                )}
-                {post.imageUrl && (
-                  <Image src={post.imageUrl} alt={post.title} width={300} height={200} className="w-full h-32 object-cover rounded" />
-                )}
-                <p className="text-white/50 text-xs mt-2">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </p>
-              </div>
+              <Link key={post.id} href={`/lab4/posts/${post.id}`}>
+                <div className="bg-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/20 transition">
+                  <h4 className="text-white font-medium text-sm mb-2">{post.title}</h4>
+                  {post.excerpt && (
+                    <p className="text-white/70 text-xs mb-2">{post.excerpt.replace(/<[^>]*>/g, '').replace(/&lt;|&gt;|&amp;|&quot;|&#39;/g, '')}</p>
+                  )}
+                  {post.imageUrl && (
+                    <Image src={post.imageUrl} alt={post.title} width={300} height={200} className="w-full h-32 object-cover rounded" />
+                  )}
+                  <p className="text-white/50 text-xs mt-2">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
         ) : (
@@ -195,15 +231,14 @@ const Profile: React.FC = () => {
       <div className="mt-6 px-4">
         <h3 className="text-white text-lg font-semibold mb-3">Followers ({followersCount})</h3>
         {followers.length > 0 ? (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {followers.map((follower) => (
               <div key={follower.id} className="bg-white/10 rounded-lg p-3 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
                   {follower.name?.charAt(0).toUpperCase() || follower.email.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-white text-sm font-medium">{follower.name || follower.email}</p>
-                  <p className="text-white/70 text-xs">{follower.email}</p>
+                  <p className="text-white text-sm font-medium">{follower.name || 'User'}</p>
                 </div>
               </div>
             ))}
@@ -213,41 +248,58 @@ const Profile: React.FC = () => {
         )}
       </div>
 
-      {/* All Posts Feed */}
+      {/* Following Users */}
       <div className="mt-6 px-4">
-        <h3 className="text-white text-lg font-semibold mb-3">All Posts ({allPosts.length})</h3>
-        {allPosts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
-            {allPosts.map((post) => (
-              <div key={post.id} className="bg-white/10 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">
-                    {post.author?.name?.charAt(0).toUpperCase() || post.author?.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <p className="text-white/70 text-xs">{post.author?.name || post.author?.email || 'Unknown Author'}</p>
+        <h3 className="text-white text-lg font-semibold mb-3">Following ({followingCount})</h3>
+        {followingUsers.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {followingUsers.map((user) => (
+              <div key={user.id} className="bg-white/10 rounded-lg p-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">
+                  {user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase()}
                 </div>
-                <h4 className="text-white font-medium text-sm mb-2">{post.title}</h4>
-                {post.excerpt && (
-                  <p className="text-white/70 text-xs mb-2">{post.excerpt.replace(/<[^>]*>/g, '').replace(/&lt;|&gt;|&amp;|&quot;|&#39;/g, '')}</p>
-                )}
-                {post.imageUrl && (
-                  <Image src={post.imageUrl} alt={post.title} width={300} height={200} className="w-full h-32 object-cover rounded" />
-                )}
-                <p className="text-white/50 text-xs mt-2">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </p>
+                <div>
+                  <p className="text-white text-sm font-medium">{user.name || 'User'}</p>
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-white/70 text-sm">No posts available</p>
+          <p className="text-white/70 text-sm">Not following anyone yet</p>
         )}
       </div>
 
-      {/* Following */}
+      {/* Posts from Following */}
       <div className="mt-6 px-4">
-        <h3 className="text-white text-lg font-semibold mb-3">Following ({followingCount})</h3>
-        <p className="text-white/70 text-sm">Following feature coming soon</p>
+        <h3 className="text-white text-lg font-semibold mb-3">Posts from Following ({followingPosts.length})</h3>
+        {followingPosts.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {followingPosts.map((post) => (
+              <Link key={post.id} href={`/lab4/posts`}>
+                <div className="bg-white/10 rounded-lg p-4 cursor-pointer hover:bg-white/20 transition">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">
+                      {post.author?.name?.charAt(0).toUpperCase() || post.author?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <p className="text-white/70 text-xs">{post.author?.name || 'User'}</p>
+                  </div>
+                  <h4 className="text-white font-medium text-sm mb-2">{post.title}</h4>
+                  {post.excerpt && (
+                    <p className="text-white/70 text-xs mb-2">{post.excerpt.replace(/<[^>]*>/g, '').replace(/&lt;|&gt;|&amp;|&quot;|&#39;/g, '')}</p>
+                  )}
+                  {post.imageUrl && (
+                    <Image src={post.imageUrl} alt={post.title} width={300} height={200} className="w-full h-32 object-cover rounded" />
+                  )}
+                  <p className="text-white/50 text-xs mt-2">
+                    {new Date(post.createdAt).toLocaleDateDate()}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="text-white/70 text-sm">No posts from followed users</p>
+        )}
       </div>
 
       {showEditModal && (

@@ -152,30 +152,47 @@ export default function PostsPage() {
     }
   };
 
-  const toggleFollow = (postId: string) => {
+  const toggleFollow = async (postId: string) => {
     if (!session) {
       router.push('/lab2/login');
       return;
     }
 
-    const isFollowing = followedUsers[postId];
+    const post = allPosts.find(p => p.id === postId);
+    if (!post?.author?.id) return;
 
-    // Update follow state per post
-    setFollowedUsers({
-      ...followedUsers,
-      [postId]: !isFollowing
-    });
+    try {
+      const response = await fetch('/api/lab9/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentUserEmail: session.user?.email,
+          targetUserId: post.author.id
+        })
+      });
 
-    setAllPosts(prev => prev.map(p =>
-      p.id === postId
-        ? {
-            ...p,
-            followers: isFollowing
-              ? p.followers.filter((f: any) => f.id !== currentUser)
-              : p.followers.some((f: any) => f.id === currentUser) ? p.followers : [...(p.followers || []), { id: currentUser }]
-          }
-        : p
-    ));
+      if (response.ok) {
+        const data = await response.json();
+        
+        setFollowedUsers(prev => ({
+          ...prev,
+          [postId]: data.isFollowing
+        }));
+
+        setAllPosts(prev => prev.map(p =>
+          p.id === postId
+            ? {
+                ...p,
+                followers: data.isFollowing
+                  ? [...(p.followers || []), { id: currentUser }]
+                  : p.followers.filter((f: any) => f.id !== currentUser)
+              }
+            : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
   };
 
 

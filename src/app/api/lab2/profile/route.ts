@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, getFollowers } = await request.json();
+    const { email, getFollowers, getFollowing } = await request.json();
     
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -29,6 +29,17 @@ export async function POST(request: NextRequest) {
               }
             }
           }
+        } : false,
+        following: getFollowing ? {
+          include: {
+            following: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
         } : false
       }
     });
@@ -45,6 +56,10 @@ export async function POST(request: NextRequest) {
 
     if (getFollowers && user.followers) {
       response.followers = user.followers.map(f => f.follower);
+    }
+
+    if (getFollowing && user.following) {
+      response.following = user.following.map(f => f.following);
     }
 
     return NextResponse.json(response);
