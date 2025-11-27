@@ -18,6 +18,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Prevent users from following themselves
+    if (currentUser.id === targetUserId) {
+      return NextResponse.json({ error: "You cannot follow yourself" }, { status: 400 });
+    }
+
     // Check if already following
     const existingFollow = await prisma.follow.findFirst({
       where: {

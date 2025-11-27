@@ -16,6 +16,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   const [followers, setFollowers] = useState<number>(0);
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState<boolean>(false);
 
   async function toggleFollow() {
     if (!session || !currentUserEmail) {
@@ -48,6 +50,19 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       if (!currentUserEmail) return;
       
       try {
+        // Get current user ID
+        const userRes = await fetch('/api/lab2/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUserEmail })
+        });
+        
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setCurrentUserId(userData.userId);
+          setIsOwnProfile(userData.userId === userId);
+        }
+        
         const res = await fetch(`/api/lab9/followers/${userId}?currentUser=${encodeURIComponent(currentUserEmail)}`);
         const data = await res.json();
         setFollowers(data.followers);
@@ -76,12 +91,19 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="p-4">
-      <button
-        onClick={toggleFollow}
-        className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
-      >
-        {isFollowing ? 'Unfollow' : 'Follow'} ({followers})
-      </button>
+      {isOwnProfile ? (
+        <div className="text-center">
+          <p className="text-gray-600 mb-2">This is your profile</p>
+          <p className="text-lg font-semibold">{followers} Followers</p>
+        </div>
+      ) : (
+        <button
+          onClick={toggleFollow}
+          className="border-2 border-black bg-transparent text-black px-4 py-2 rounded transition-all duration-300 hover:bg-black hover:text-white hover:scale-105"
+        >
+          {isFollowing ? 'Unfollow' : 'Follow'} ({followers})
+        </button>
+      )}
     </div>
   );
 }

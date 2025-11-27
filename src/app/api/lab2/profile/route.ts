@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, getFollowers } = await request.json();
     
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -18,7 +18,18 @@ export async function POST(request: NextRequest) {
             followers: true,
             following: true
           }
-        }
+        },
+        followers: getFollowers ? {
+          include: {
+            follower: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        } : false
       }
     });
 
@@ -26,11 +37,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({
+    const response: any = {
       userId: user.id,
       followersCount: user._count.followers,
       followingCount: user._count.following
-    });
+    };
+
+    if (getFollowers && user.followers) {
+      response.followers = user.followers.map(f => f.follower);
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching profile data:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
