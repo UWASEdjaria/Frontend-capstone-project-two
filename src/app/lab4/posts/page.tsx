@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 export default function PostsPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [posts, setPosts] = useState<any[]>([]);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +28,7 @@ export default function PostsPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/lab4/post");
+        const response = await fetch("/api/lab3/posts");
         
         if (!response.ok) {
           throw new Error(`Failed to fetch posts: ${response.status}`);
@@ -50,7 +49,6 @@ export default function PostsPage() {
           postFollowers: post.postFollowers || []
         }));
         
-        setPosts(postsWithCounts);
         setAllPosts(postsWithCounts);
         
         const uniqueCategories = [...new Set(data.flatMap((post: any) => 
@@ -69,7 +67,7 @@ export default function PostsPage() {
   }, []);
 
   // Filter posts based on search and category
-  const filteredPosts = useMemo(() => {
+  const posts = useMemo(() => {
     return allPosts.filter(post => {
       const matchesSearch = !searchTerm ||
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,33 +80,28 @@ export default function PostsPage() {
     });
   }, [searchTerm, selectedCategory, allPosts]);
 
-  useEffect(() => {
-    setPosts(filteredPosts);
-  }, [filteredPosts]);
-
   const toggleLike = (postId: string) => {
     if (!session) {
       router.push('/lab2/login');
       return;
     }
     
-    const isLiked = likedPosts[postId];
-    
-    setLikedPosts({
-      ...likedPosts,
-      [postId]: !isLiked
-    });
-    
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
-        : p
-    ));
-    setAllPosts(allPosts.map(p => 
-      p.id === postId 
-        ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
-        : p
-    ));
+    try {
+      const isLiked = likedPosts[postId];
+      
+      setLikedPosts(prev => ({
+        ...prev,
+        [postId]: !isLiked
+      }));
+      
+      setAllPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, likes: isLiked ? p.likes.slice(0, -1) : [...(p.likes || []), { id: Date.now() }] }
+          : p
+      ));
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
   };
 
   const toggleDislike = (postId: string) => {
@@ -117,23 +110,22 @@ export default function PostsPage() {
       return;
     }
     
-    const isDisliked = dislikedPosts[postId];
-    
-    setDislikedPosts({
-      ...dislikedPosts,
-      [postId]: !isDisliked
-    });
-    
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
-        : p
-    ));
-    setAllPosts(allPosts.map(p => 
-      p.id === postId 
-        ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
-        : p
-    ));
+    try {
+      const isDisliked = dislikedPosts[postId];
+      
+      setDislikedPosts(prev => ({
+        ...prev,
+        [postId]: !isDisliked
+      }));
+      
+      setAllPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, dislikes: isDisliked ? p.dislikes.slice(0, -1) : [...(p.dislikes || []), { id: Date.now() }] }
+          : p
+      ));
+    } catch (error) {
+      console.error('Error toggling dislike:', error);
+    }
   };
 
   const deletePost = async (postId: string) => {
@@ -149,8 +141,7 @@ export default function PostsPage() {
         });
         
         if (response.ok) {
-          setPosts(posts.filter(p => p.id !== postId));
-          setAllPosts(allPosts.filter(p => p.id !== postId));
+          setAllPosts(prev => prev.filter(p => p.id !== postId));
         } else {
           alert('Failed to delete post');
         }
@@ -175,8 +166,7 @@ export default function PostsPage() {
       [postId]: !isFollowing
     });
 
-    // Update follower counts in the specific post
-    const updatePosts = (postsList: any[]) => postsList.map(p =>
+    setAllPosts(prev => prev.map(p =>
       p.id === postId
         ? {
             ...p,
@@ -185,10 +175,7 @@ export default function PostsPage() {
               : p.followers.some((f: any) => f.id === currentUser) ? p.followers : [...(p.followers || []), { id: currentUser }]
           }
         : p
-    );
-
-    setPosts(updatePosts(posts));
-    setAllPosts(updatePosts(allPosts));
+    ));
   };
 
 
@@ -210,18 +197,14 @@ export default function PostsPage() {
         const newCommentData = await response.json();
         setNewComment({ ...newComment, [postId]: "" });
         
-        // Update posts locally with new comment
-        const updatePostsWithComment = (postsList: any[]) => postsList.map(p => 
+        setAllPosts(prev => prev.map(p => 
           p.id === postId 
             ? { 
                 ...p, 
                 comments: [...(p.comments || []), newCommentData]
               }
             : p
-        );
-        
-        setPosts(updatePostsWithComment(posts));
-        setAllPosts(updatePostsWithComment(allPosts));
+        ));
       }
     } catch (error) {
       console.error("Error adding comment:", error);

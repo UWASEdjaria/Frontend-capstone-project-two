@@ -11,6 +11,7 @@ const Profile: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [posts, setPosts] = useState<{ id: string; title: string; imageUrl?: string; createdAt: string; excerpt?: string }[]>([]);
   const [followers, setFollowers] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [allPosts, setAllPosts] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -36,15 +37,12 @@ const Profile: React.FC = () => {
     }
   }, [session?.user]);
 
-
-
   const fetchUserData = async () => {
     if (!session?.user?.email) return;
     
     try {
       setLoading(true);
       
-      // Get current user info
       const userRes = await fetch('/api/lab2/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,25 +53,17 @@ const Profile: React.FC = () => {
         const userData = await userRes.json();
         const userId = userData.userId;
         
-        // Fetch user's posts
         const postsRes = await fetch('/api/lab3/posts');
         if (postsRes.ok) {
-          const allPosts = await postsRes.json();
-          const userPosts = allPosts.filter((post: any) => post.authorId === userId);
+          const allPostsData = await postsRes.json();
+          const userPosts = allPostsData.filter((post: { authorId: string }) => post.authorId === userId);
           setPosts(userPosts);
+          setAllPosts(allPostsData);
         }
         
-        // Fetch fresh follower data
-        const followersRes = await fetch(`/api/lab9/followers/${userId}?currentUser=${session.user.email}`);
-        if (followersRes.ok) {
-          const followData = await followersRes.json();
-          setFollowersCount(followData.followers || 0);
-        }
-        
-        // Set following count
+        setFollowersCount(userData.followersCount || 0);
         setFollowingCount(userData.followingCount || 0);
         
-        // Fetch followers list
         const followersListRes = await fetch('/api/lab2/profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -92,17 +82,35 @@ const Profile: React.FC = () => {
     }
   };
 
-
-
-  const handleEditProfile = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEditProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setShowEditModal(false);
+    try {
+      const response = await fetch('/api/lab2/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: session?.user?.email,
+          name: editForm.name,
+          bio: editForm.bio 
+        })
+      });
+      if (response.ok) {
+        setShowEditModal(false);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   if (status === "loading" || loading) return <div className="text-center mt-10 text-white">Loading...</div>;
   
+  useEffect(() => {
+    if (status !== "loading" && !session) {
+      router.push('/lab2/login');
+    }
+  }, [session, status, router]);
+
   if (!session) {
-    router.push('/lab2/login');
     return null;
   }
 
@@ -205,9 +213,42 @@ const Profile: React.FC = () => {
         )}
       </div>
 
+      {/* All Posts Feed */}
+      <div className="mt-6 px-4">
+        <h3 className="text-white text-lg font-semibold mb-3">All Posts ({allPosts.length})</h3>
+        {allPosts.length > 0 ? (
+          <div className="grid grid-cols-1 gap-3">
+            {allPosts.map((post) => (
+              <div key={post.id} className="bg-white/10 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">
+                    {post.author?.name?.charAt(0).toUpperCase() || post.author?.email?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <p className="text-white/70 text-xs">{post.author?.name || post.author?.email || 'Unknown Author'}</p>
+                </div>
+                <h4 className="text-white font-medium text-sm mb-2">{post.title}</h4>
+                {post.excerpt && (
+                  <p className="text-white/70 text-xs mb-2">{post.excerpt.replace(/<[^>]*>/g, '').replace(/&lt;|&gt;|&amp;|&quot;|&#39;/g, '')}</p>
+                )}
+                {post.imageUrl && (
+                  <Image src={post.imageUrl} alt={post.title} width={300} height={200} className="w-full h-32 object-cover rounded" />
+                )}
+                <p className="text-white/50 text-xs mt-2">
+                  {new Date(post.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-white/70 text-sm">No posts available</p>
+        )}
+      </div>
 
-
-
+      {/* Following */}
+      <div className="mt-6 px-4">
+        <h3 className="text-white text-lg font-semibold mb-3">Following ({followingCount})</h3>
+        <p className="text-white/70 text-sm">Following feature coming soon</p>
+      </div>
 
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
