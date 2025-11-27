@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
           }
         },
         followers: getFollowers ? {
-          include: {
+          select: {
+            followerId: true,
             follower: {
               select: {
                 id: true,
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
           }
         } : false,
         following: getFollowing ? {
-          include: {
+          select: {
+            followingId: true,
             following: {
               select: {
                 id: true,
