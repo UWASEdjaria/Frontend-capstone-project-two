@@ -68,7 +68,19 @@ export default function PostsPage() {
 
   // Filter posts based on search and category
   const posts = useMemo(() => {
+    console.log('All posts:', allPosts);
     return allPosts.filter(post => {
+      // Permanently filter out demo posts
+      const demoTitles = ['Welcome to Medium Clone', 'Getting Started with Writing', 'Community Guidelines'];
+      const isDemoPost = post.author?.name === 'Demo User' || 
+                        post.author?.email === 'demo@example.com' ||
+                        demoTitles.includes(post.title) ||
+                        post.content?.includes('Demo User') ||
+                        post.content?.includes('medium clone') ||
+                        post.content?.includes('Community Guidelines');
+      
+      if (isDemoPost) return false;
+      
       const matchesSearch = !searchTerm ||
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase());
@@ -318,14 +330,14 @@ export default function PostsPage() {
       {posts.length === 0 && !loading ? (
         <p className="text-black">No posts yet. <Link href="/lab3/editor" className="text-black hover:underline" onClick={(e) => { if (!session) { e.preventDefault(); router.push('/lab2/login'); } }}>Create one!</Link></p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="columns-1 md:columns-2 gap-3 space-y-3">
           {posts.map(p => (
-            <div key={p.id} className="p-6 border-2 border-black rounded bg-white/80 backdrop-blur-sm h-fit shadow-lg">
+            <div key={p.id} className="p-4 rounded bg-white/80 backdrop-blur-sm break-inside-avoid mb-3 shadow-lg post-preview">
             <div className="flex justify-between items-start mb-2">
               <Link href={`/lab4/posts/${p.id}`} className="text-xl font-bold text-black hover:underline flex-1">
                 {p.title}
               </Link>
-              {session && p.author?.email === session?.user?.email && (
+              {session && (
                 <div className="flex gap-2 ml-2">
                   <Link 
                     href={`/lab3/editor?edit=${p.id}`}
@@ -342,6 +354,25 @@ export default function PostsPage() {
                 </div>
               )}
             </div>
+            
+            {/* Post Content with Images */}
+            <div className="mt-4 mb-4">
+              <div 
+                className="prose prose-sm max-w-none text-black post-content"
+                dangerouslySetInnerHTML={{ __html: p.content?.substring(0, 300) + (p.content?.length > 300 ? '...' : '') }}
+              />
+              {p.imageUrl && (
+                <img 
+                  src={p.imageUrl} 
+                  alt={p.title}
+                  className="w-72 h-60 object-cover rounded-lg mt-2"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              )}
+            </div>
+            
             <div className="flex items-center justify-between mt-2">
               <div>
                 <p className="text-black">By {p.author?.name || 'Unknown'}</p>

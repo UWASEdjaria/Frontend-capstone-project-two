@@ -22,6 +22,8 @@ export default function PostPage() {
   const [isFollowingPost, setIsFollowingPost] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
+  const [editingComment, setEditingComment] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => {
     fetch(`/api/lab4/post/${id}`)
@@ -75,6 +77,24 @@ export default function PostPage() {
     }
   };
 
+  const handleEditComment = (index: number, content: string) => {
+    setEditingComment(index);
+    setEditText(content);
+  };
+
+  const handleSaveEdit = (index: number) => {
+    const updatedComments = [...comments];
+    updatedComments[index].content = editText;
+    setComments(updatedComments);
+    setEditingComment(null);
+    setEditText("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditText("");
+  };
+
   const handleFollow = () => {
     if (!session) {
       router.push('/lab2/login');
@@ -108,6 +128,19 @@ export default function PostPage() {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (confirm('Are you sure you want to delete this post?')) {
+      router.push('/lab4/posts');
+    }
+  };
+
+  const handleDeleteComment = (index: number) => {
+    if (confirm('Are you sure you want to delete this comment?')) {
+      const updatedComments = comments.filter((_, i) => i !== index);
+      setComments(updatedComments);
+    }
+  };
+
   if (!post) return <div className="max-w-4xl mx-auto mt-10 p-4 text-white">Loading...</div>;
 
   return (
@@ -121,12 +154,20 @@ export default function PostPage() {
           </div>
           <div className="flex gap-2">
             {session && (post.authorId === session?.user?.email) && (
-              <Link
-                href={`/lab3/editor?edit=${post.id}`}
-                className="px-4 py-2 border border-white rounded hover:bg-black hover:text-white transition-all"
-              >
-                Edit Post
-              </Link>
+              <>
+                <Link
+                  href={`/lab3/editor?edit=${post.id}`}
+                  className="px-3 py-2 border border-white rounded hover:bg-black hover:text-white transition-all text-sm"
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={handleDeletePost}
+                  className="px-3 py-2 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all text-sm"
+                >
+                  Delete
+                </button>
+              </>
             )}
             {session && post.authorId !== session?.user?.email && (
               <button
@@ -140,7 +181,23 @@ export default function PostPage() {
             )}
           </div>
         </div>
-        <div className="prose max-w-none text-white" dangerouslySetInnerHTML={{ __html: post.content }} />
+        <div 
+          className="prose max-w-none text-white post-content" 
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
+        {post.imageUrl && (
+          <div className="mt-4 flex justify-center">
+            <img 
+              src={post.imageUrl} 
+              alt={post.title}
+              className="w-72 h-60 object-cover rounded-lg shadow-md"
+              onError={(e) => {
+                console.log('Image failed to load:', post.imageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
       </article>
 
       <div className="flex justify-between items-center mb-4 pb-4 border-b">
@@ -229,11 +286,54 @@ export default function PostPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-0">
           {comments.map((comment, index) => (
-            <div key={index} className="p-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
-              <p className="font-semibold text-black text-sm">{comment.author?.name || 'Anonymous'}</p>
-              <p className="text-black mt-2 leading-relaxed">{comment.content}</p>
+            <div key={index} className="p-3 text-black bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-2">
+                <p className="font-semibold text-black text-sm">{comment.author?.name || 'Anonymous'}</p>
+                {session && comment.author?.email === session.user?.email && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditComment(index, comment.content)}
+                      className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteComment(index)}
+                      className="text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+              {editingComment === index ? (
+                <div className="mt-2">
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded text-black"
+                    rows={3}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => handleSaveEdit(index)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-3 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-black mt-2 leading-relaxed">{comment.content}</p>
+              )}
               <p className="text-sm text-gray-500 mt-3">{new Date(comment.createdAt).toLocaleDateString()}</p>
             </div>
           ))}

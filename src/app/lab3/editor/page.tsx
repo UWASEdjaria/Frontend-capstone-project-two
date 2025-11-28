@@ -27,7 +27,7 @@ export default function Editor() {
     setIsClient(true);
     // Fetch user's existing posts
     if (session) {
-      fetch("/api/lab4/post")
+      fetch("/api/lab3/posts")
         .then(res => res.json())
         .then(data => {
           const userPosts = data.filter((post: any) => post.author?.email === session.user?.email);
@@ -64,25 +64,36 @@ export default function Editor() {
     if (!form.title || !form.content) return alert("Please fill title and content!");
     setUploading(true);
     try {
-      const imageUrl = imageFile ? await uploadImage(imageFile) : form.imageUrl;
-      if (imageFile && !imageUrl) return setUploading(false);
+      let imageUrl = form.imageUrl;
       
-      const result = await apiCall("/api/lab4/post", {
+      if (imageFile) {
+        console.log('Uploading image file:', imageFile.name);
+        imageUrl = await uploadImage(imageFile);
+        if (!imageUrl) {
+          alert("Image upload failed. Please try again or use an image URL instead.");
+          setUploading(false);
+          return;
+        }
+        console.log('Image uploaded successfully:', imageUrl);
+      }
+      
+      const result = await apiCall("/api/lab3/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, tags: form.category ? [form.category] : [], imageUrl })
       });
       
       if (result.ok) {
-        alert("Post published!");
+        alert("Post published successfully!");
         setForm({ title: "", content: "", category: "", imageUrl: "" });
         setImageFile(null);
         router.push("/lab4/posts");
       } else {
-        alert("Failed to publish: " + result.data);
+        alert("Failed to publish post: " + result.data);
       }
     } catch (error) {
-      alert("Error publishing: " + error);
+      console.error('Publishing error:', error);
+      alert("Error publishing post: " + error);
     } finally {
       setUploading(false);
     }
@@ -108,15 +119,45 @@ export default function Editor() {
               <input placeholder="Image URL (optional)..." value={form.imageUrl} onChange={(e) => setForm({...form, imageUrl: e.target.value})}
                 className="w-full p-4 border-2 border-gray-300 rounded-lg text-black bg-white focus:border-blue-500 focus:outline-none" />
               <div className="text-center text-gray-500">OR</div>
-              <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setImageFile(file); setForm({...form, imageUrl: ""}); }}}
-                className="w-full p-4 border-2 border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none" />
+              <input 
+                type="file" 
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" 
+                onChange={(e) => { 
+                  const file = e.target.files?.[0]; 
+                  if (file) { 
+                    console.log('File selected:', file.name, file.size, file.type);
+                    if (file.size > 4 * 1024 * 1024) {
+                      alert('File too large! Please choose an image under 4MB.');
+                      e.target.value = '';
+                      return;
+                    }
+                    setImageFile(file); 
+                    setForm({...form, imageUrl: ""}); 
+                  }
+                }}
+                className="w-full p-4 border-2 border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:outline-none" 
+              />
               {imageFile && <p className="text-sm text-green-600">Selected: {imageFile.name}</p>}
             </div>
             
             <div className="min-h-[400px] border-2 border-gray-300 rounded-lg">
-              {isClient && <JoditEditor value={form.content} config={{ placeholder: "Write your story...", buttons: ["bold", "italic", "ul", "ol", "link"], showCharsCounter: false, showWordsCounter: false, showXPathInStatusbar: false }}
-               //When the user stops typing, save the text to your form
-               onBlur={(content: string) => setForm({...form, content})} />}
+              {isClient && <JoditEditor 
+                value={form.content} 
+                config={{ 
+                  placeholder: "Write your story...", 
+                  buttons: ["bold", "italic", "ul", "ol", "link"], 
+                  showCharsCounter: false, 
+                  showWordsCounter: false, 
+                  showXPathInStatusbar: false,
+                  removeButtons: ['image', 'file', 'video'],
+                  disablePlugins: ['drag-and-drop', 'drag-and-drop-element', 'file', 'image', 'video'],
+                  uploader: { enable: false },
+                  filebrowser: { ajax: { enable: false } },
+                  image: { openOnDblClick: false },
+                  link: { openInNewTabCheckbox: false }
+                }}
+                onBlur={(content: string) => setForm({...form, content})} 
+              />}
             </div>
             
             <div className="flex gap-4 justify-center">
