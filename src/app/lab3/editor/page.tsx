@@ -68,12 +68,13 @@ export default function Editor() {
       
       if (imageFile) {
         console.log('Uploading image file:', imageFile.name);
-        imageUrl = await uploadImage(imageFile);
-        if (!imageUrl) {
+        const uploadResult = await uploadImage(imageFile);
+        if (!uploadResult) {
           alert("Image upload failed. Please try again or use an image URL instead.");
           setUploading(false);
           return;
         }
+        imageUrl = uploadResult;
         console.log('Image uploaded successfully:', imageUrl);
       }
       
