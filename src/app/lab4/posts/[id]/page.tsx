@@ -210,13 +210,13 @@ export default function PostPage() {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Write a comment..."
-              className="w-full p-3 border-2 border-white rounded mb-2 text-white transition-all duration-300 focus:shadow-md focus:scale-105"
+              className="w-full p-3 border-2 border-gray-300 rounded-lg mb-2 text-black bg-white transition-all duration-300 focus:shadow-md focus:border-gray-500"
               rows={3}
               required
             />
             <button
               type="submit"
-              className="border-2 border-white bg-transparent text-white px-4 py-2 rounded hover:bg-black hover:text-white"
+              className="border-2 border-gray-300 bg-white text-black px-6 py-2 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all font-medium"
             >
               Post Comment
             </button>
@@ -231,10 +231,10 @@ export default function PostPage() {
 
         <div className="space-y-4">
           {comments.map((comment, index) => (
-            <div key={index} className="p-4 bg-gray-50 rounded">
-              <p className="font-semibold text-white">{comment.author?.name || 'Anonymous'}</p>
-              <p className="text-white mt-1">{comment.content}</p>
-              <p className="text-sm text-white mt-2">{new Date(comment.createdAt).toLocaleDateString()}</p>
+            <div key={index} className="p-4 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
+              <p className="font-semibold text-black text-sm">{comment.author?.name || 'Anonymous'}</p>
+              <p className="text-black mt-2 leading-relaxed">{comment.content}</p>
+              <p className="text-sm text-gray-500 mt-3">{new Date(comment.createdAt).toLocaleDateString()}</p>
             </div>
           ))}
         </div>
