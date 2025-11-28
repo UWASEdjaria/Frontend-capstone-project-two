@@ -151,11 +151,7 @@ export default function Editor() {
                   showWordsCounter: false, 
                   showXPathInStatusbar: false,
                   removeButtons: ['image', 'file', 'video'],
-                  disablePlugins: ['drag-and-drop', 'drag-and-drop-element', 'file', 'image', 'video'],
-                  uploader: { enable: false },
-                  filebrowser: { ajax: { enable: false } },
-                  image: { openOnDblClick: false },
-                  link: { openInNewTabCheckbox: false }
+                  disablePlugins: ['drag-and-drop', 'drag-and-drop-element', 'file', 'image', 'video']
                 }}
                 onBlur={(content: string) => setForm({...form, content})} 
               />}
