@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import prisma from "../../../../../../lib/prisma";
+import prisma from "@/lib/prisma";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const post = await prisma.post.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         author: true,
         tags: true,
@@ -19,7 +20,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
     
     try {
-      const numericPostId = parseInt(params.id.replace(/\D/g, '')) || 1;
+      const numericPostId = parseInt(id.replace(/\D/g, '')) || 1;
       const allLikes = await prisma.likeLab8.findMany({
         where: { postId: numericPostId }
       });
@@ -32,7 +33,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         likes,
         dislikes
       });
-    } catch (error) {
+    } catch {
       return NextResponse.json({
         ...post,
         likes: [],
@@ -45,15 +46,16 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { title, content, tags } = await request.json();
     
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const excerpt = content.replace(/<[^>]*>/g, '').substring(0, 150) + '...';
     
     const post = await prisma.post.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
         slug,
@@ -80,10 +82,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await prisma.post.delete({
-      where: { id: params.id }
+      where: { id }
     });
     
     return NextResponse.json({ message: "Post deleted successfully" });

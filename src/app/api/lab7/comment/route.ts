@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export async function POST(request: Request) {
   const { postId, content } = await request.json();
@@ -9,8 +7,8 @@ export async function POST(request: Request) {
   const comment = await prisma.comment.create({
     data: {
       content,
-      postId: parseInt(postId),
-      authorId: 1, // Default user
+      postId: postId,
+      authorId: "1", // Default user
     },
     include: {
       author: true,

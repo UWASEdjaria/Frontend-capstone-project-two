@@ -1,87 +1,157 @@
-import { NextResponse } from "next/server";
-import prisma from "../../../../../lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export async function POST(request: Request) {
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w ]+/g, '')
+    .replace(/ +/g, '-');
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const { title, content, tags } = await request.json();
+    const session = await getServerSession(authOptions);
+    console.log('Session:', session);
     
-    // Generate slug from title
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
-    // Generate excerpt from content
-    const excerpt = content.replace(/<[^>]*>/g, '').substring(0, 150) + '...';
-    
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { title, content, tags, imageUrl } = await request.json();
+    console.log('Post data:', { title, content, tags, imageUrl });
+
+    if (!title || !content) {
+      return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
+    }
+
+    // Find or create user
+    let user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      // Create user if doesn't exist
+      user = await prisma.user.create({
+        data: {
+          email: session.user.email,
+          name: session.user.name || session.user.email.split('@')[0],
+          password: '' // OAuth users don't need password
+        }
+      });
+      console.log('Created new user:', user);
+    }
+
+    // Create tags if they exist
+    let tagRecords: { id: string; name: string }[] = [];
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      const tagPromises = (tags as string[]).map(async (tagName: string) => {
+        return await prisma.tag.upsert({
+          where: { name: tagName },
+          update: {},
+          create: { name: tagName }
+        });
+      });
+      tagRecords = await Promise.all(tagPromises);
+    }
+
+    // Create post
     const post = await prisma.post.create({
       data: {
         title,
-        slug,
+        slug: slugify(title),
         content,
-        excerpt,
+        excerpt: content.substring(0, 150) + (content.length > 150 ? '...' : ''),
+        imageUrl: imageUrl || null,
         published: true,
         publishedAt: new Date(),
-        authorId: "1",
-        tags: tags ? {
-          connectOrCreate: tags.map((tagName: string) => ({
-            where: { name: tagName },
-            create: { name: tagName }
-          }))
+        authorId: user.id,
+        tags: tagRecords.length > 0 ? {
+          connect: tagRecords.map(tag => ({ id: tag.id }))
         } : undefined
       },
       include: {
         author: true,
         tags: true
-      },
+      }
     });
-    
-    return NextResponse.json(post);
+
+    console.log('Created post:', post);
+    return NextResponse.json(post, { status: 201 });
   } catch (error) {
     console.error("Error creating post:", error);
-    return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Internal server error", 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 });
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    // If no session, return empty array (no posts visible)
+    if (!session || !session.user?.email) {
+      return NextResponse.json([]);
+    }
+
+    // Find current user
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!user) {
+      return NextResponse.json([]);
+    }
+
+    // Show all posts
     const posts = await prisma.post.findMany({
-      include: {
-        author: true,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
         tags: true,
         comments: {
-          include: { author: true }
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
         },
+        likes: true,
+        _count: {
+          select: { likes: true, comments: true }
+        }
       },
       orderBy: {
-        createdAt: 'desc',
-      },
-    });
-    
-    const postsWithCounts = await Promise.all(posts.map(async (post) => {
-      try {
-        const numericPostId = parseInt(post.id.replace(/\D/g, '')) || 1;
-        const allLikes = await prisma.likeLab8.findMany({
-          where: { postId: numericPostId }
-        });
-        
-        const likes = allLikes.filter(like => like.userId > 0);
-        const dislikes = allLikes.filter(like => like.userId < 0);
-        
-        return {
-          ...post,
-          likes,
-          dislikes
-        };
-      } catch (error) {
-        return {
-          ...post,
-          likes: [],
-          dislikes: []
-        };
+        createdAt: 'desc'
       }
+    });
+
+    // Add default values for missing fields
+    const postsWithDefaults = posts.map(post => ({
+      ...post,
+      dislikes: [],
+      followers: [],
+      postFollowers: []
     }));
-    
-    return NextResponse.json(postsWithCounts);
+
+    return NextResponse.json(postsWithDefaults);
   } catch (error) {
-    console.error("Error fetching posts:", error);
-    return NextResponse.json([], { status: 500 });
+    console.error("Database error:", error);
+    return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
   }
 }
